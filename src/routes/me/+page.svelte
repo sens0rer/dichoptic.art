@@ -58,6 +58,7 @@
 						<div class="info">
 							<a href="/collection/{c.id}"><strong>{c.title}</strong></a>
 							<span class="muted small">{c.count} pairs</span>
+							{#if c.private}<span class="badge">private</span>{/if}
 							{#if c.status !== 'approved'}
 								<span class="badge {c.status}">{c.status}</span>
 								{#if c.status === 'rejected' && c.rejectReason}<span class="small">{c.rejectReason}</span>{/if}
@@ -80,6 +81,7 @@
 						<img src={thumbUrl(i.thumbPrefix, 400)} alt="" />
 						<div class="info">
 							<a href="/image/{i.id}"><strong>{i.title}</strong></a>
+							{#if i.private}<span class="badge">private</span>{/if}
 							{#if i.status !== 'approved'}
 								<span class="badge {i.status}">{i.status}</span>
 								{#if i.status === 'rejected' && i.rejectReason}<span class="small">{i.rejectReason}</span>{/if}

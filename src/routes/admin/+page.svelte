@@ -81,6 +81,20 @@
 		{#if !data.queue.collections.length && !data.queue.images.length}
 			<p class="muted">Nothing waiting for review.</p>
 		{/if}
+
+		<h2>Private submissions</h2>
+		<p class="muted small">Only their owners and admins can open these.</p>
+		<ul class="recent small">
+			{#each data.private.collections as c (c.id)}
+				<li><a href="/collection/{c.id}">{c.title}</a> <span class="muted">collection</span></li>
+			{/each}
+			{#each data.private.images as i (i.id)}
+				<li><a href="/image/{i.id}">{i.title ?? 'Untitled'}</a> <span class="muted">pair</span></li>
+			{/each}
+			{#if !data.private.collections.length && !data.private.images.length}
+				<li class="muted">None.</li>
+			{/if}
+		</ul>
 	{/if}
 </main>
 

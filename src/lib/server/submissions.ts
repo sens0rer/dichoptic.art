@@ -46,8 +46,8 @@ export async function preparePair(input: PairInput): Promise<Prepared> {
 	return prepare(input.mode, { left, right });
 }
 
-export const visibleImageSql = sql`(i.deleted_at IS NULL AND i.status = 'approved' AND (i.collection_id IS NULL OR EXISTS (
-	SELECT 1 FROM collections vc WHERE vc.id = i.collection_id AND vc.deleted_at IS NULL AND vc.status = 'approved')))`;
+export const visibleImageSql = sql`(i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private AND (i.collection_id IS NULL OR EXISTS (
+	SELECT 1 FROM collections vc WHERE vc.id = i.collection_id AND vc.deleted_at IS NULL AND vc.status = 'approved' AND NOT vc.private)))`;
 
 export async function findDuplicate(phash: string, ignoreId?: string) {
 	const rows = await db.execute<{ id: string; title: string | null }>(sql`
@@ -102,7 +102,9 @@ async function effectiveMedium(tx: Reader, collectionId: string | null, own: str
 	return c?.medium ?? null;
 }
 
-const initialStatus = () => (config.moderation ? ('pending' as const) : ('approved' as const));
+// Private items are never reviewed; they are queued only when made public.
+const initialStatus = (isPrivate: boolean) =>
+	config.moderation && !isPrivate ? ('pending' as const) : ('approved' as const);
 
 export async function createImage(
 	tx: Tx,
@@ -112,6 +114,8 @@ export async function createImage(
 		prepared: Prepared;
 		pair: PairInput;
 		collectionId?: string;
+		// Images inside a collection follow the collection's privacy.
+		isPrivate?: boolean;
 	}
 ): Promise<string> {
 	const { meta, prepared } = args;
@@ -121,6 +125,7 @@ export async function createImage(
 		right: args.pair.right ? tmpKey(args.pair.right) : undefined
 	});
 	const medium = await effectiveMedium(tx, args.collectionId ?? null, meta.medium);
+	const isPrivate = args.collectionId ? !!args.isPrivate : meta.private;
 	await tx.insert(images).values({
 		id,
 		title: meta.title,
@@ -141,10 +146,20 @@ export async function createImage(
 		collectionId: args.collectionId ?? null,
 		ownerId: args.ownerId,
 		searchText: imageSearch(meta),
-		status: initialStatus()
+		private: isPrivate,
+		status: initialStatus(isPrivate)
 	});
 	await setImageTags(tx, id, meta.tags);
 	return id;
+}
+
+// Making something public puts it in the review queue when moderation is on.
+function privacyChange(current: { private: boolean }, next: boolean) {
+	if (current.private === next) return {};
+	return {
+		private: next,
+		...(!next && config.moderation ? { status: 'pending' as const } : {})
+	};
 }
 
 export async function updateImage(
@@ -183,6 +198,8 @@ export async function updateImage(
 			chromacyType: meta.chromacyType,
 			filterInfo: medium === 'photography' ? meta.filterInfo : null,
 			searchText: imageSearch(meta),
+			// Pairs inside a collection follow the collection's privacy.
+			...(image.collectionId ? {} : privacyChange(image, meta.private)),
 			...files
 		})
 		.where(eq(images.id, image.id));
@@ -212,7 +229,8 @@ export async function createCollection(
 		filterInfo: meta.medium === 'photography' ? meta.filterInfo : null,
 		ownerId: args.ownerId,
 		searchText: collectionSearch(meta),
-		status: initialStatus()
+		private: meta.private,
+		status: initialStatus(meta.private)
 	});
 	await setCollectionTags(tx, id, meta.tags);
 	return id;
@@ -220,10 +238,14 @@ export async function createCollection(
 
 export async function updateCollection(
 	tx: Tx,
-	id: string,
+	current: typeof collections.$inferSelect,
 	meta: CollectionMeta,
 	coverImageId: string | null
 ) {
+	const id = current.id;
+	const change = privacyChange(current, meta.private);
+	if ('private' in change)
+		await tx.update(images).set({ private: meta.private }).where(eq(images.collectionId, id));
 	await tx
 		.update(collections)
 		.set({
@@ -240,6 +262,7 @@ export async function updateCollection(
 			chromacyType: meta.chromacyType,
 			filterInfo: meta.medium === 'photography' ? meta.filterInfo : null,
 			searchText: collectionSearch(meta),
+			...change,
 			...(coverImageId ? { coverImageId } : {})
 		})
 		.where(eq(collections.id, id));

@@ -4,12 +4,13 @@ import { config } from '#lib/server/config';
 import { getCollection, getImage, siblings } from '#lib/server/content';
 import { db } from '#lib/server/db';
 import { neighbours } from '#lib/server/feed';
+import { isAdmin } from '#lib/server/admin';
 import { currentOwner } from '#lib/server/owner';
 import { entryHref, parseQuery, toParams } from '#lib/query';
 
 export async function load({ params, url, cookies }) {
 	const owner = await currentOwner(cookies);
-	const data = await getImage(params.id, owner?.id);
+	const data = await getImage(params.id, owner?.id, isAdmin(cookies));
 	if (!data) error(404, 'Image not found');
 	const { image, collection } = data;
 
@@ -17,7 +18,7 @@ export async function load({ params, url, cookies }) {
 	let next: string | null = null;
 	let back = '/';
 	if (collection) {
-		const c = await getCollection(collection.id, owner?.id);
+		const c = await getCollection(collection.id, owner?.id, isAdmin(cookies));
 		const nav = siblings(c?.images ?? [], image.id);
 		prev = nav.prev ? `/image/${nav.prev.id}` : null;
 		next = nav.next ? `/image/${nav.next.id}` : null;
@@ -62,6 +63,7 @@ export async function load({ params, url, cookies }) {
 		eff: data.eff,
 		tags: data.tags,
 		isOwner: data.isOwner,
+		isPrivate: data.isPrivate,
 		live: data.live,
 		liked: data.liked,
 		prev,

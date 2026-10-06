@@ -12,7 +12,8 @@
 		inherit = null,
 		inheritedMedium = null,
 		showTitle = true,
-		subject = 'pair'
+		subject = 'pair',
+		showPrivate = false
 	}: {
 		values: Meta;
 		errors?: Record<string, string>;
@@ -23,6 +24,7 @@
 		inheritedMedium?: string | null;
 		showTitle?: boolean;
 		subject?: 'pair' | 'collection';
+		showPrivate?: boolean;
 	} = $props();
 
 	const blank = $derived(inherit ?? 'Not specified');
@@ -70,6 +72,20 @@
 	<textarea id="m-desc" bind:value={values.description} maxlength="5000"></textarea>
 	{#if errors.description}<span class="error">{errors.description}</span>{/if}
 </div>
+
+{#if showPrivate}
+	<div class="field">
+		<label class="inline check">
+			<input type="checkbox" bind:checked={values.private} />
+			<span>
+				Private: only you can see this{subject === 'collection' ? ', and everything in it' : ''}
+				<span class="muted small">
+					(site admins can too; it never appears in Browse, search or on other pages)</span
+				>
+			</span>
+		</label>
+	</div>
+{/if}
 
 <fieldset>
 	<legend>Credit</legend>
@@ -142,6 +158,11 @@
 </fieldset>
 
 <style>
+	.check {
+		align-items: flex-start;
+		color: var(--text);
+		font-size: 0.95rem;
+	}
 	fieldset {
 		border: 1px solid var(--border);
 		border-radius: var(--radius);

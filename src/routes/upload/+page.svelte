@@ -144,7 +144,7 @@
 	>
 		{#if target === 'image'}
 			<PairPicker bind:pair={single.pair} bind:busy={single.busy} />
-			<MetaFields bind:values={meta} {errors} presets={data.presets} />
+			<MetaFields bind:values={meta} {errors} presets={data.presets} showPrivate />
 		{:else}
 			{#if target === 'collection'}
 				<div class="panel">
@@ -152,7 +152,7 @@
 					<p class="muted small">
 						Settings here are defaults for every pair inside. A pair can override them later by editing it.
 					</p>
-					<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" />
+					<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" showPrivate />
 				</div>
 			{:else}
 				<div class="field">

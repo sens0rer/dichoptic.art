@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
 import { collections, db, images } from '#lib/server/db';
 import { storage } from '#lib/server/storage';
+import { isAdmin } from '#lib/server/admin';
 import { currentOwner } from '#lib/server/owner';
 
 const TYPES: Record<string, string> = {
@@ -20,9 +21,13 @@ export async function GET({ params, cookies }) {
 		? await db.select().from(collections).where(eq(collections.id, image.collectionId))
 		: [];
 	if (collection?.deletedAt) error(404);
-	if (image.status !== 'approved' || (collection && collection.status !== 'approved')) {
+	const restricted =
+		image.status !== 'approved' ||
+		image.private ||
+		(collection && (collection.status !== 'approved' || collection.private));
+	if (restricted) {
 		const owner = await currentOwner(cookies);
-		if (owner?.id !== image.ownerId) error(404);
+		if (owner?.id !== image.ownerId && !isAdmin(cookies)) error(404);
 	}
 	let data: Buffer;
 	try {

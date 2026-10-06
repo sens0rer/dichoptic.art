@@ -40,7 +40,12 @@
 		<NavArrows prev={data.prev} next={data.next} />
 	</div>
 	<h1>{c.title}</h1>
-	{#if !data.live}
+	{#if data.isPrivate}
+		<p class="panel">
+			<span class="badge">private</span>
+			Only {data.isOwner ? 'you' : 'its owner'} and site admins can see this collection and its pairs.
+		</p>
+	{:else if !data.live}
 		<p class="panel">
 			<span class="badge {c.status}">{c.status}</span>
 			{#if c.status === 'pending'}Only you can see this until it is approved.{/if}
@@ -50,7 +55,7 @@
 
 	<div class="row actions">
 		{#if data.live}<LikeButton type="collection" id={c.id} count={c.likeCount} liked={data.liked} />{/if}
-		<ShareButtons title={c.title} />
+		{#if !data.isPrivate}<ShareButtons title={c.title} />{/if}
 		{#if data.isOwner}
 			<a class="btn" href="/upload?collection={c.id}">Add pairs</a>
 			<a class="btn" href="/collection/{c.id}/edit">Edit</a>

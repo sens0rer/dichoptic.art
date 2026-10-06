@@ -43,7 +43,7 @@
 			void save();
 		}}
 	>
-		<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" />
+		<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" showPrivate />
 
 		<fieldset class="cover">
 			<legend>Cover</legend>

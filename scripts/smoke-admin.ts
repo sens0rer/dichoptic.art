@@ -107,3 +107,16 @@ r = await call('admin', '/admin?/reject', { form: { type: 'image', id: rid, reas
 r = await call('a', '/me');
 check('owner sees rejection', r.data.includes('nope') || r.data.includes('rejected'));
 
+
+// admins can open private items; others cannot
+up = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
+r = await call('a', '/api/images', {
+	json: { meta: { title: 'QA admin private', private: true }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true }
+});
+const privId = r.data.id;
+r = await call('b', `/image/${privId}`);
+check('private hidden from others', r.status === 404, r.status);
+r = await call('admin', `/image/${privId}`);
+check('private visible to admin', r.status === 200, r.status);
+r = await call('admin', '/admin');
+check('private listed for admin, not queued', r.data.includes('QA admin private'));

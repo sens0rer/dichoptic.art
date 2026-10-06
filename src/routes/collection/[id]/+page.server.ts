@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 import { config } from '#lib/server/config';
 import { getCollection } from '#lib/server/content';
 import { neighbours } from '#lib/server/feed';
+import { isAdmin } from '#lib/server/admin';
 import { currentOwner } from '#lib/server/owner';
 import { sql } from 'drizzle-orm';
 import { db } from '#lib/server/db';
@@ -9,7 +10,7 @@ import { entryHref, parseQuery, toParams } from '#lib/query';
 
 export async function load({ params, cookies, url }) {
 	const owner = await currentOwner(cookies);
-	const data = await getCollection(params.id, owner?.id);
+	const data = await getCollection(params.id, owner?.id, isAdmin(cookies));
 	if (!data) error(404, 'Collection not found');
 	const { collection } = data;
 	const cover =
@@ -68,6 +69,7 @@ export async function load({ params, cookies, url }) {
 		})),
 		tags: data.tags,
 		isOwner: data.isOwner,
+		isPrivate: data.isPrivate,
 		live: data.live,
 		liked: data.liked,
 		publicUrl: config.publicUrl

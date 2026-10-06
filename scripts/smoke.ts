@@ -130,3 +130,56 @@ r = await call('a', `/api/images/${imgIds.at(-1)}`, { method: 'DELETE' });
 check('last image deletion removes collection', r.status === 200);
 r = await call('b', `/collection/${colId}`);
 check('collection 404 after last image deleted', r.status === 404, r.status);
+
+// private submissions
+const pf = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+r = await call('a', '/api/images', {
+	json: { meta: { title: 'QA private', private: true, tags: ['secrettag'] }, pair: { mode: 'single_file', left: pf }, confirm: true }
+});
+const privId = r.data.id;
+check('private upload', r.status === 200 && !!privId, r);
+r = await call('a', `/image/${privId}`);
+check('owner sees private page', r.status === 200 && r.data.includes('Only you and site admins'), r.status);
+r = await call('b', `/image/${privId}`);
+check('others get 404 for private page', r.status === 404, r.status);
+r = await call('b', '/api/feed?q=private');
+check('private not in search', r.data.entries.length === 0, r.data);
+r = await call('b', '/api/feed');
+check('private not in feed', !r.data.entries.some((e: any) => e.id === privId));
+r = await call('b', '/api/tags?q=secret');
+check('private tag not suggested', r.data.length === 0, r.data);
+const privThumb = /\/files\/(img\/[^"'\s]*-file\.[a-z]+)/.exec((await call('a', `/image/${privId}`)).data)?.[1];
+r = await fetch(`${base}/files/${privThumb}`, { headers: { cookie: jars.b } });
+check('private file 404 for others', r.status === 404, r.status);
+r = await fetch(`${base}/files/${privThumb}`, { headers: { cookie: jars.a } });
+check('private file ok for owner', r.status === 200, r.status);
+r = await call('b', '/api/like', { json: { type: 'image', id: privId } });
+check('private not likeable', r.status === 404, r);
+
+// publishing it makes it public; hiding it again removes it
+r = await call('a', `/api/images/${privId}`, { method: 'PATCH', json: { meta: { title: 'QA private', private: false } } });
+r = await call('b', `/image/${privId}`);
+check('made public', r.status === 200, r.status);
+r = await call('a', `/api/images/${privId}`, { method: 'PATCH', json: { meta: { title: 'QA private', private: true } } });
+r = await call('b', `/image/${privId}`);
+check('made private again', r.status === 404, r.status);
+
+// private collection hides its pairs
+const q1 = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
+const q2 = await upload(S + 'photo_2026-10-06_10-36-09 (2).jpg');
+r = await call('a', '/api/collections', {
+	json: { collection: { title: 'QA private set', private: true }, items: [{ meta: { title: 'inner' }, pair: { mode: 'two_files', left: q1, right: q2 } }], confirm: true }
+});
+const pcol = r.data.id;
+const inner = [...(await call('a', `/collection/${pcol}`)).data.matchAll(/href="\/image\/([A-Za-z0-9]{10})"/g)].map((m) => m[1]).at(-1);
+r = await call('b', `/collection/${pcol}`);
+check('private collection 404 for others', r.status === 404, r.status);
+r = await call('b', `/image/${inner}`);
+check('pair of private collection 404 for others', r.status === 404, r.status);
+r = await call('b', '/api/feed');
+check('private collection not in feed', !r.data.entries.some((e: any) => e.id === pcol));
+r = await call('a', `/api/collections/${pcol}`, { method: 'PATCH', json: { meta: { title: 'QA private set', private: false } } });
+r = await call('b', `/image/${inner}`);
+check('publishing the collection publishes its pairs', r.status === 200, r.status);
+await call('a', `/api/collections/${pcol}`, { method: 'DELETE' });
+await call('a', `/api/images/${privId}`, { method: 'DELETE' });

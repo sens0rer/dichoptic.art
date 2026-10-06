@@ -40,8 +40,8 @@ export const hasLiked = async (ownerId: string | undefined, type: 'image' | 'col
 	return !!row;
 };
 
-// Unapproved content is only visible to its owner; deleted content is visible to nobody.
-export async function getImage(id: string, ownerId?: string) {
+// Unapproved and private content is only visible to its owner (or an admin); deleted content is visible to nobody.
+export async function getImage(id: string, ownerId?: string, admin = false) {
 	const [image] = await db.select().from(images).where(eq(images.id, id));
 	if (!image || image.deletedAt) return null;
 	const collection = image.collectionId
@@ -49,8 +49,12 @@ export async function getImage(id: string, ownerId?: string) {
 		: null;
 	if (collection?.deletedAt) return null;
 	const isOwner = !!ownerId && image.ownerId === ownerId;
-	const live = image.status === 'approved' && (!collection || collection.status === 'approved');
-	if (!live && !isOwner) return null;
+	const isPrivate = image.private || !!collection?.private;
+	const live =
+		image.status === 'approved' &&
+		(!collection || collection.status === 'approved') &&
+		!isPrivate;
+	if (!live && !isOwner && !admin) return null;
 
 	const own = await imageTagNames(id);
 	const inherited = collection ? await collectionTagNames(collection.id) : [];
@@ -69,12 +73,13 @@ export async function getImage(id: string, ownerId?: string) {
 		ownTags: own,
 		tags: [...new Set([...own, ...inherited])].sort(),
 		isOwner,
+		isPrivate,
 		live,
 		liked: !live ? false : await hasLiked(ownerId, 'image', id)
 	};
 }
 
-export async function getCollection(id: string, ownerId?: string) {
+export async function getCollection(id: string, ownerId?: string, admin = false) {
 	const [collection] = await db.select().from(collections).where(eq(collections.id, id));
 	if (!collection || collection.deletedAt) return null;
 	const isOwner = !!ownerId && collection.ownerId === ownerId;
@@ -84,13 +89,14 @@ export async function getCollection(id: string, ownerId?: string) {
 		.where(and(eq(images.collectionId, id), isNull(images.deletedAt)))
 		.orderBy(asc(images.createdAt), asc(images.id));
 	const visible = all.filter((i) => i.status === 'approved');
-	const live = collection.status === 'approved' && visible.length > 0;
-	if (!live && !isOwner) return null;
+	const live = collection.status === 'approved' && visible.length > 0 && !collection.private;
+	if (!live && !isOwner && !admin) return null;
 	return {
 		collection,
-		images: isOwner ? all : visible,
+		images: isOwner || admin ? all : visible,
 		tags: await collectionTagNames(id),
 		isOwner,
+		isPrivate: collection.private,
 		live,
 		liked: !live ? false : await hasLiked(ownerId, 'collection', id)
 	};
@@ -114,9 +120,9 @@ export async function suggestTags(prefix: string, limit = 8): Promise<string[]> 
 		.where(
 			sql`${tags.name} LIKE ${p + '%'} AND (
 				EXISTS (SELECT 1 FROM image_tags it JOIN images i ON i.id = it.image_id
-					WHERE it.tag_id = ${tags.id} AND i.deleted_at IS NULL AND i.status = 'approved')
+					WHERE it.tag_id = ${tags.id} AND i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private)
 				OR EXISTS (SELECT 1 FROM collection_tags ct JOIN collections c ON c.id = ct.collection_id
-					WHERE ct.tag_id = ${tags.id} AND c.deleted_at IS NULL AND c.status = 'approved'))`
+					WHERE ct.tag_id = ${tags.id} AND c.deleted_at IS NULL AND c.status = 'approved' AND NOT c.private))`
 		)
 		.orderBy(asc(tags.name))
 		.limit(limit);
@@ -158,7 +164,13 @@ export async function pendingQueue() {
 		db
 			.select()
 			.from(collections)
-			.where(and(eq(collections.status, 'pending'), isNull(collections.deletedAt)))
+			.where(
+				and(
+					eq(collections.status, 'pending'),
+					isNull(collections.deletedAt),
+					eq(collections.private, false)
+				)
+			)
 			.orderBy(asc(collections.createdAt)),
 		// Pending images that stand alone or sit in an already-approved collection.
 		db
@@ -169,6 +181,7 @@ export async function pendingQueue() {
 				and(
 					isNull(images.deletedAt),
 					eq(images.status, 'pending'),
+					eq(images.private, false),
 					or(
 						isNull(images.collectionId),
 						and(eq(collections.status, 'approved'), isNull(collections.deletedAt))
@@ -188,4 +201,22 @@ export async function pendingQueue() {
 		collections: cols.map((c) => ({ ...c, images: members.filter((m) => m.collectionId === c.id) })),
 		images: imgs.map((r) => r.image)
 	};
+}
+
+export async function privateSubmissions() {
+	const [imgs, cols] = await Promise.all([
+		db
+			.select()
+			.from(images)
+			.where(and(eq(images.private, true), isNull(images.deletedAt), isNull(images.collectionId)))
+			.orderBy(desc(images.createdAt))
+			.limit(100),
+		db
+			.select()
+			.from(collections)
+			.where(and(eq(collections.private, true), isNull(collections.deletedAt)))
+			.orderBy(desc(collections.createdAt))
+			.limit(100)
+	]);
+	return { images: imgs, collections: cols };
 }

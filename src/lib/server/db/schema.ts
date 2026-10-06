@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
 	bigserial,
+	boolean,
 	customType,
 	index,
 	integer,
@@ -55,6 +56,8 @@ const credit = () => ({
 });
 
 const moderation = () => ({
+	// Private: visible only to the owner and admins, never listed, searched or liked.
+	private: boolean('private').notNull().default(false),
 	status: statusEnum('status').notNull().default('approved'),
 	rejectReason: text('reject_reason'),
 	deletedAt: timestamp('deleted_at', { withTimezone: true })

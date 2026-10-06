@@ -21,12 +21,12 @@ export const isAdmin = (cookies: Cookies) => {
 export function login(cookies: Cookies, token: string): boolean {
 	if (!equal(token, config.adminToken)) return false;
 	cookies.set(ADMIN_COOKIE, mac(), {
-		path: '/admin',
+		path: '/',
 		httpOnly: true,
-		sameSite: 'strict',
+		sameSite: 'lax',
 		maxAge: 60 * 60 * 24 * 30
 	});
 	return true;
 }
 
-export const logout = (cookies: Cookies) => cookies.delete(ADMIN_COOKIE, { path: '/admin' });
+export const logout = (cookies: Cookies) => cookies.delete(ADMIN_COOKIE, { path: '/' });

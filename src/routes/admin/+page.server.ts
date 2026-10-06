@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { isAdmin, login, logout } from '#lib/server/admin';
 import { clearFlag, flaggedClients, pausedInfo, resume } from '#lib/server/abuse';
 import { config } from '#lib/server/config';
-import { pendingQueue } from '#lib/server/content';
+import { pendingQueue, privateSubmissions } from '#lib/server/content';
 import { db } from '#lib/server/db';
 import {
 	approveCollection,
@@ -19,7 +19,8 @@ export async function load({ cookies }) {
 		moderation: config.moderation,
 		paused: await pausedInfo(),
 		flagged: await flaggedClients(),
-		queue: await pendingQueue()
+		queue: await pendingQueue(),
+		private: await privateSubmissions()
 	};
 }
 

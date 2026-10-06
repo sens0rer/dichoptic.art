@@ -56,14 +56,19 @@
 			{#if data.live}
 				<LikeButton type="image" id={image.id} count={image.likeCount} liked={data.liked} />
 			{/if}
-			<ShareButtons title={image.title} />
+			{#if !data.isPrivate}<ShareButtons title={image.title} />{/if}
 			{#if data.isOwner}
 				<a class="btn" href="/image/{image.id}/edit">Edit</a>
 				<button class="danger" onclick={remove}>Delete</button>
 			{/if}
 		</div>
 	</div>
-	{#if !data.live}
+	{#if data.isPrivate}
+		<p class="panel">
+			<span class="badge">private</span>
+			Only {data.isOwner ? 'you' : 'its owner'} and site admins can see this.
+		</p>
+	{:else if !data.live}
 		<p class="panel">
 			<span class="badge {image.status}">{image.status}</span>
 			{#if image.status === 'pending'}Only you can see this until it is approved.{/if}

@@ -63,7 +63,8 @@ export const POST = (event) =>
 						meta: metas[index],
 						prepared: prepared[index],
 						pair: item.pair,
-						collectionId: c.id
+						collectionId: c.id,
+						isPrivate: c.private
 					})
 				);
 			return created;

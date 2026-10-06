@@ -12,6 +12,7 @@ export interface Meta {
 	chromacyType: string;
 	filterInfo: string;
 	tags: string[];
+	private: boolean;
 }
 
 export const emptyMeta = (): Meta => ({
@@ -27,7 +28,8 @@ export const emptyMeta = (): Meta => ({
 	chromacy: '',
 	chromacyType: '',
 	filterInfo: '',
-	tags: []
+	tags: [],
+	private: false
 });
 
 export interface Preset {

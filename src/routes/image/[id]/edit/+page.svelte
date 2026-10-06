@@ -68,6 +68,7 @@
 			titleRequired={!data.master}
 			inherit={data.master ? 'Inherit from collection' : null}
 			inheritedMedium={data.master?.medium ?? null}
+			showPrivate={!data.master}
 		/>
 
 		{#if duplicate}

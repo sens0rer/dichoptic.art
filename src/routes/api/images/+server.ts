@@ -26,11 +26,13 @@ export const POST = (event) =>
 		const meta = imageMetaSchema(!collectionId).safeParse(parsed.data.meta);
 		if (!meta.success) return zodFail(meta.error);
 
+		let collectionPrivate = false;
 		if (collectionId) {
 			const owner = await currentOwner(event.cookies);
 			const [c] = await db.select().from(collections).where(eq(collections.id, collectionId));
 			if (!c || c.deletedAt || c.ownerId !== owner?.id)
 				return fail(403, 'You can only add to collections you own');
+			collectionPrivate = c.private;
 		}
 
 		const prepared = await preparePair(pair);
@@ -41,7 +43,14 @@ export const POST = (event) =>
 
 		const owner = await ensureOwner(event.cookies, event.request);
 		const id = await db.transaction((tx) =>
-			createImage(tx, { ownerId: owner.id, meta: meta.data, prepared, pair, collectionId })
+			createImage(tx, {
+				ownerId: owner.id,
+				meta: meta.data,
+				prepared,
+				pair,
+				collectionId,
+				isPrivate: collectionId ? collectionPrivate : false
+			})
 		);
 		await recordSubmissions(clientIp(event), [{ type: 'image', id }]);
 		return json({ id, recovery: owner.key });

@@ -11,7 +11,7 @@ export interface Anchor {
 	id: string;
 }
 
-const visibleCollectionImage = sql`ci.deleted_at IS NULL AND ci.status = 'approved'`;
+const visibleCollectionImage = sql`ci.deleted_at IS NULL AND ci.status = 'approved' AND NOT ci.private`;
 const normBy = (col: string) =>
 	sql.raw(`lower(regexp_replace(btrim(${col}), '\\s+', ' ', 'g'))`);
 
@@ -95,7 +95,7 @@ export async function listEntries(
 				i.thumb_w AS "thumbW", i.thumb_h AS "thumbH", i.like_count, 1 AS count,
 				i.submitted_by AS "submittedBy", i.credit_name AS "creditName", i.created_at::text AS ca
 			FROM images i
-			WHERE i.collection_id IS NULL AND i.deleted_at IS NULL AND i.status = 'approved'
+			WHERE i.collection_id IS NULL AND i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private
 				AND ${and(conds.map((c) => c.image))}
 			UNION ALL
 			SELECT 'collection', c.id, c.title, cov.thumb_prefix, cov.thumb_w, cov.thumb_h, c.like_count,
@@ -109,7 +109,7 @@ export async function listEntries(
 			JOIN LATERAL (
 				SELECT count(*)::int AS n FROM images ci WHERE ci.collection_id = c.id AND ${visibleCollectionImage}
 			) cnt ON TRUE
-			WHERE c.deleted_at IS NULL AND c.status = 'approved'
+			WHERE c.deleted_at IS NULL AND c.status = 'approved' AND NOT c.private
 				AND ${and(conds.map((c) => c.collection))}
 		)
 		SELECT e.type, e.id, e.title, e."thumbPrefix", e."thumbW", e."thumbH", e.like_count AS "likeCount",
@@ -134,10 +134,10 @@ export async function displayName(by: string): Promise<string | null> {
 	const rows = await db.execute<{ name: string }>(sql`
 		SELECT name FROM (
 			SELECT i.submitted_by AS name, i.created_at FROM images i
-			WHERE i.deleted_at IS NULL AND i.status = 'approved' AND ${normBy('i.submitted_by')} = ${by}
+			WHERE i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private AND ${normBy('i.submitted_by')} = ${by}
 			UNION ALL
 			SELECT c.submitted_by, c.created_at FROM collections c
-			WHERE c.deleted_at IS NULL AND c.status = 'approved' AND ${normBy('c.submitted_by')} = ${by}
+			WHERE c.deleted_at IS NULL AND c.status = 'approved' AND NOT c.private AND ${normBy('c.submitted_by')} = ${by}
 		) n ORDER BY created_at LIMIT 1`);
 	return rows[0]?.name ?? null;
 }

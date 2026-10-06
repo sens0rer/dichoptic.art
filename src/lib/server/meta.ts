@@ -38,6 +38,7 @@ const classification = {
 	chromacy: choice(CHROMACIES),
 	chromacyType: text(100),
 	filterInfo: text(500),
+	private: z.boolean().optional().default(false),
 	tags: z
 		.array(z.string())
 		.max(20)

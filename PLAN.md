@@ -66,6 +66,7 @@ The processing function runs with a raised `maxDuration` on Vercel.
 | source_mode | `two_files` \| `single_file` |
 | phash | perceptual hash of the whole pair image, for duplicate check |
 | collection_id | optional; set at upload, immutable (see Collections) |
+| private | bool, default false; see Private submissions |
 | owner_id | FK to `owners`; never exposed publicly |
 | created_at | |
 | deleted_at | null = visible; set by soft delete (also on collections) |
@@ -95,6 +96,13 @@ Four **fixed categories** (dimension, medium, alteration, chromacy) are real col
 - Editable: all metadata, credit, tags, replacing files (not collection membership).
 - **Delete is soft.** It sets `deleted_at` on the row; nothing is removed from the database or from storage. Deleted items disappear from feeds, search (rows filtered out, FTS entries ignored via the join), collection grids, `/me` and like counts shown on the site, and their pages and files return 404. Every public query filters `deleted_at IS NULL`. Restoring is a manual DB change for now.
 - Deleting a collection deletes everything in it (see Collections).
+
+## Private submissions
+- The uploader can mark an image or a collection **private** at upload (a checkbox), and flip it later in the edit form. A private item is visible only to its owner (cookie or recovery link) and to a signed-in admin.
+- A private item never appears in feeds, search, `/by/:name`, neighbour navigation, tag suggestions or the duplicate check; it cannot be liked; its page and files return 404 to everyone else; it emits no link-preview tags and has no share buttons.
+- A collection's privacy applies to every pair in it (pairs added later inherit it; flipping the collection flips them all). Pairs inside a collection have no privacy setting of their own.
+- Private items skip moderation. Making one public queues it for review when `MODERATION=on`.
+- `/admin` lists private submissions so admins can open them; opening one needs the admin cookie, which now applies site-wide.
 
 ## Moderation (optional, off by default)
 - Env flag `MODERATION=on|off`, default **off**. When off, every submission is approved immediately and nothing below is visible.

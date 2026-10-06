@@ -68,7 +68,8 @@ export const POST = (event) =>
 					meta: imageMeta,
 					prepared: prepared[index],
 					pair: item.pair,
-					collectionId
+					collectionId,
+					isPrivate: meta.data.private
 				});
 				imageIds.push(imageId);
 				if (index === (parsed.data.cover ?? 0)) cover = imageId;

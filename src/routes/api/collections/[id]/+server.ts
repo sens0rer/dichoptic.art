@@ -42,7 +42,7 @@ export const PATCH = (event) =>
 			if (!img) return fail(400, 'Cover must be an image in this collection');
 			cover = img.id;
 		}
-		await db.transaction((tx) => updateCollection(tx, c.id, meta.data, cover));
+		await db.transaction((tx) => updateCollection(tx, c, meta.data, cover));
 		return json({ id: c.id });
 	});
 

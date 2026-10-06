@@ -22,6 +22,7 @@ export async function load({ params, cookies }) {
 			chromacy: image.chromacy ?? '',
 			chromacyType: image.chromacyType ?? '',
 			filterInfo: image.filterInfo ?? '',
+			private: image.private,
 			tags: data.ownTags,
 			sourceMode: image.sourceMode,
 			thumbPrefix: image.thumbPrefix
