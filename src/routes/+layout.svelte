@@ -10,6 +10,13 @@
 
 	onMount(initConsent);
 
+	// While the banner is up, the page gets bottom padding of the same height so nothing is hidden behind it.
+	let bannerHeight = $state(0);
+	$effect(() => {
+		const open = needsPrompt();
+		document.documentElement.style.setProperty('--consent-h', open ? `${bannerHeight}px` : '0px');
+	});
+
 	const links = [
 		{ href: '/', label: 'Browse' },
 		{ href: '/upload', label: 'Upload' },
@@ -36,7 +43,7 @@
 {@render children()}
 
 {#if needsPrompt()}
-	<div class="consent" role="dialog" aria-label="Cookie notice">
+	<div class="consent" role="dialog" aria-label="Cookie notice" bind:clientHeight={bannerHeight}>
 		{#if consent.choice === 'denied'}
 			<p>
 				You turned cookies off, so likes are disabled and uploads from this browser can't be edited
@@ -92,7 +99,7 @@
 		position: fixed;
 		z-index: 50;
 		left: 50%;
-		bottom: 1em;
+		bottom: calc(1em + env(safe-area-inset-bottom));
 		transform: translateX(-50%);
 		width: min(560px, calc(100% - 24px));
 		background: var(--surface-2);
@@ -103,6 +110,30 @@
 	}
 	.consent p {
 		margin: 0 0 0.8em;
+	}
+	/* Phones: a compact bar on the bottom edge, buttons side by side, smaller text. */
+	@media (max-width: 600px) {
+		.consent {
+			left: 0;
+			right: 0;
+			bottom: 0;
+			transform: none;
+			width: auto;
+			border-radius: var(--radius) var(--radius) 0 0;
+			border-width: 1px 0 0;
+			padding: 0.8em 1em calc(0.8em + env(safe-area-inset-bottom));
+		}
+		.consent p {
+			font-size: 0.85rem;
+			line-height: 1.4;
+			margin-bottom: 0.6em;
+		}
+		.consent :global(.choices) {
+			flex-wrap: nowrap;
+		}
+		.consent button {
+			flex: 1;
+		}
 	}
 	.choices {
 		justify-content: center;
