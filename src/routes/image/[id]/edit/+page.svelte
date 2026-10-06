@@ -54,7 +54,7 @@
 		}}
 	>
 		<div class="panel">
-			<img class="cur" src={thumbUrl(data.image.thumbPrefix, 800)} alt="Current image" />
+			<img class="cur" src={thumbUrl(data.image.thumbPrefix, 800)} alt="Current version" />
 			<label class="inline">
 				<input type="checkbox" bind:checked={replace} /> Replace the files
 			</label>
