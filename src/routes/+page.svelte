@@ -3,7 +3,7 @@
 
 	let { data } = $props();
 
-	const description = 'Browse and share dichoptic image pairs: art and photography made for dichoptic color viewing.';
+	const description = 'Browse and share dichoptic images.';
 </script>
 
 <svelte:head>
