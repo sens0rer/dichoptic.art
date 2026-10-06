@@ -170,11 +170,11 @@
 	ondrop={(e) => drop(e)}
 >
 	<div class="row modes" role="radiogroup" aria-label="Upload mode">
+		<button type="button" class:active={mode === 'two_files'} onclick={() => setMode('two_files')}>
+			Left and right image
+		</button>
 		<button type="button" class:active={mode === 'single_file'} onclick={() => setMode('single_file')}>
 			One image (side by side)
-		</button>
-		<button type="button" class:active={mode === 'two_files'} onclick={() => setMode('two_files')}>
-			Two images
 		</button>
 	</div>
 	<p class="muted small">
