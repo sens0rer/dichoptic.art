@@ -64,7 +64,8 @@ export async function getImage(id: string, ownerId?: string, admin = false) {
 		alteration: image.alteration ?? collection?.alteration ?? null,
 		chromacy: image.chromacy ?? collection?.chromacy ?? null,
 		chromacyType: image.chromacyType ?? collection?.chromacyType ?? null,
-		filterInfo: image.filterInfo ?? collection?.filterInfo ?? null
+		filterInfo: image.filterInfo ?? collection?.filterInfo ?? null,
+		date: image.date ?? collection?.date ?? image.createdAt.toISOString().slice(0, 10)
 	};
 	return {
 		image,

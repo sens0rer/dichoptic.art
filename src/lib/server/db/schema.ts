@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
 	bigserial,
+	date,
 	boolean,
 	customType,
 	index,
@@ -45,7 +46,9 @@ const classification = () => ({
 	alteration: alterationEnum('alteration'),
 	chromacy: chromacyEnum('chromacy'),
 	chromacyType: text('chromacy_type'),
-	filterInfo: text('filter_info')
+	filterInfo: text('filter_info'),
+	// Day the work was made or taken (shown on the page). Posting order always uses created_at.
+	date: date('date', { mode: 'string' })
 });
 
 const credit = () => ({

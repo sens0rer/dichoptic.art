@@ -10,11 +10,16 @@ export interface Meta {
 	chromacy: string;
 	chromacyType: string;
 	filterInfo: string;
+	date: string;
 	tags: string[];
 	private: boolean;
 }
 
-export const emptyMeta = (): Meta => ({
+// The visitor's own calendar day, as YYYY-MM-DD.
+export const todayLocal = () => new Date().toLocaleDateString('en-CA');
+
+// `date` defaults to today; per-pair forms inside a collection pass '' to inherit the collection's.
+export const emptyMeta = (date = todayLocal()): Meta => ({
 	title: '',
 	description: '',
 	credit: '',
@@ -26,6 +31,7 @@ export const emptyMeta = (): Meta => ({
 	chromacy: '',
 	chromacyType: '',
 	filterInfo: '',
+	date,
 	tags: [],
 	private: false
 });

@@ -52,6 +52,7 @@ export async function load({ params, cookies, url }) {
 			chromacy: collection.chromacy,
 			chromacyType: collection.chromacyType,
 			filterInfo: collection.filterInfo,
+			date: collection.date,
 			likeCount: collection.likeCount,
 			status: collection.status,
 			rejectReason: collection.rejectReason

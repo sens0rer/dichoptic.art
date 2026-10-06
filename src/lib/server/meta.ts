@@ -18,6 +18,12 @@ const choice = <T extends readonly [string, ...string[]]>(values: T) =>
 
 export const normTag = (t: string) => t.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 40);
 
+const isDay = (v: string) =>
+	/^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().startsWith(v);
+
+// One day of slack so a visitor ahead of the server's time zone can still pick "today".
+const tomorrow = () => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
 const credit = {
 	credit: z
 		.string()
@@ -44,6 +50,13 @@ const classification = {
 	chromacy: choice(CHROMACIES),
 	chromacyType: text(100),
 	filterInfo: text(500),
+	date: z
+		.string()
+		.trim()
+		.nullish()
+		.transform((v) => v || null)
+		.refine((v) => v === null || isDay(v), 'Enter a valid date')
+		.refine((v) => v === null || v <= tomorrow(), 'The date cannot be in the future'),
 	private: z.boolean().optional().default(false),
 	tags: z
 		.array(z.string())

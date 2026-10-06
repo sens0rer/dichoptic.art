@@ -21,6 +21,7 @@ export async function load({ params, cookies }) {
 			chromacy: c.chromacy ?? '',
 			chromacyType: c.chromacyType ?? '',
 			filterInfo: c.filterInfo ?? '',
+			date: c.date ?? '',
 			private: c.private,
 			tags: data.tags,
 			coverImageId: c.coverImageId

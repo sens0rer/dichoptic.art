@@ -56,6 +56,7 @@ The processing function runs with a raised `maxDuration` on Vercel.
 | credit_url | optional |
 | submitted_by | optional free text; who is posting this |
 | author | optional free text; who made it. Form checkbox "same as submitted by" copies `submitted_by` into `author` and disables the field. Only the two strings are stored; on edit the box is pre-checked when they are equal and non-empty |
+| date | day the work was made or taken; defaults to the posting day, can be set to any past date; shown on the page. Does not affect feed order (Newest always uses the posting time). Pairs in a collection inherit the collection's date when empty |
 | dimension | `2D` \| `3D` |
 | medium | `photography` \| `art` \| `digital_art` |
 | alteration | `unaltered` \| `digitally_altered` |

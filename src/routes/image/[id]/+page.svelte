@@ -85,6 +85,7 @@
 		<div>
 			{#if image.description}<p class="desc">{image.description}</p>{/if}
 			<Credits
+				date={data.eff.date}
 				credit={image.credit}
 				submittedBy={image.submittedBy}
 				author={image.author}

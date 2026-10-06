@@ -65,7 +65,7 @@
 	</div>
 
 	{#if c.description}<p class="desc">{c.description}</p>{/if}
-	<Credits credit={c.credit} submittedBy={c.submittedBy} author={c.author} />
+	<Credits date={c.date} credit={c.credit} submittedBy={c.submittedBy} author={c.author} />
 	<Meta fields={c} />
 	{#if data.tags.length}
 		<ul class="chips tags">

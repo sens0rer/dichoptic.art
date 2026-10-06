@@ -183,3 +183,24 @@ r = await call('b', `/image/${inner}`);
 check('publishing the collection publishes its pairs', r.status === 200, r.status);
 await call('a', `/api/collections/${pcol}`, { method: 'DELETE' });
 await call('a', `/api/images/${privId}`, { method: 'DELETE' });
+
+// date: defaults to the posting day, can be custom, never changes feed order
+const today = new Date().toISOString().slice(0, 10);
+const d1 = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+r = await call('a', '/api/images', { json: { meta: { title: 'QA dated old', date: '2019-05-01' }, pair: { mode: 'single_file', left: d1 }, confirm: true } });
+const oldId = r.data.id;
+const d2 = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+r = await call('a', '/api/images', { json: { meta: { title: 'QA dated default', date: '' }, pair: { mode: 'single_file', left: d2 }, confirm: true } });
+const defId = r.data.id;
+r = await call('b', `/image/${oldId}`);
+check('custom date shown', r.data.includes('1 May 2019'), r.status);
+r = await call('b', `/image/${defId}`);
+const todayText = new Date(today + 'T00:00:00Z').toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+check('default date is the posting day', r.data.includes(todayText), todayText);
+r = await call('b', '/api/feed');
+const titles = r.data.entries.map((e: any) => e.title);
+check('newest still follows posting order', titles.indexOf('QA dated default') < titles.indexOf('QA dated old'), titles);
+r = await call('a', '/api/images', { json: { meta: { title: 'QA future', date: '2999-01-01' }, pair: { mode: 'single_file', left: d1 }, confirm: true } });
+check('future date rejected', r.status === 400 && !!r.data.errors?.date, r);
+await call('a', `/api/images/${oldId}`, { method: 'DELETE' });
+await call('a', `/api/images/${defId}`, { method: 'DELETE' });

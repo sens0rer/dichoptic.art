@@ -22,7 +22,7 @@
 	let meta = $state(emptyMeta());
 	let single = $state<{ pair: PairRef | null; busy: boolean }>({ pair: null, busy: false });
 	let seq = 0;
-	const newRow = (): Row => ({ key: seq++, meta: emptyMeta(), details: false, pair: null, busy: false });
+	const newRow = (): Row => ({ key: seq++, meta: emptyMeta(''), details: false, pair: null, busy: false });
 	let rows = $state<Row[]>([newRow()]);
 	let cover = $state(0); // key of the row used as the collection cover
 

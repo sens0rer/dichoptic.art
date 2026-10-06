@@ -43,6 +43,13 @@
       "when": 1791292354871,
       "tag": "0005_credit_drop",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791293414929,
+      "tag": "0006_date",
+      "breakpoints": true
     }
   ]
 }

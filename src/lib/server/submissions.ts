@@ -104,6 +104,8 @@ async function effectiveMedium(tx: Reader, collectionId: string | null, own: str
 }
 
 // Private items are never reviewed; they are queued only when made public.
+const today = () => new Date().toISOString().slice(0, 10);
+
 const initialStatus = (isPrivate: boolean) =>
 	config.moderation && !isPrivate ? ('pending' as const) : ('approved' as const);
 
@@ -140,6 +142,8 @@ export async function createImage(
 		chromacy: meta.chromacy,
 		chromacyType: meta.chromacyType,
 		filterInfo: medium === 'photography' ? meta.filterInfo : null,
+		// Pairs inside a collection inherit its date when they have none.
+		date: meta.date ?? (args.collectionId ? null : today()),
 		sourceMode: prepared.mode,
 		...stored,
 		phash: prepared.phash,
@@ -196,6 +200,7 @@ export async function updateImage(
 			chromacy: meta.chromacy,
 			chromacyType: meta.chromacyType,
 			filterInfo: medium === 'photography' ? meta.filterInfo : null,
+			date: meta.date ?? (image.collectionId ? null : image.createdAt.toISOString().slice(0, 10)),
 			searchText: imageSearch(meta),
 			// Pairs inside a collection follow the collection's privacy.
 			...(image.collectionId ? {} : privacyChange(image, meta.private)),
@@ -225,6 +230,7 @@ export async function createCollection(
 		chromacy: meta.chromacy,
 		chromacyType: meta.chromacyType,
 		filterInfo: meta.medium === 'photography' ? meta.filterInfo : null,
+		date: meta.date ?? today(),
 		ownerId: args.ownerId,
 		searchText: collectionSearch(meta),
 		private: meta.private,
@@ -258,6 +264,7 @@ export async function updateCollection(
 			chromacy: meta.chromacy,
 			chromacyType: meta.chromacyType,
 			filterInfo: meta.medium === 'photography' ? meta.filterInfo : null,
+			date: meta.date ?? current.createdAt.toISOString().slice(0, 10),
 			searchText: collectionSearch(meta),
 			...change,
 			...(coverImageId ? { coverImageId } : {})

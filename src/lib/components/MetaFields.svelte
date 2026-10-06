@@ -129,6 +129,12 @@
 <fieldset>
 	<legend>About the {subject}</legend>
 	<div class="grid2">
+		<div class="field">
+			<label for="m-date">Date</label>
+			<input id="m-date" type="date" bind:value={values.date} />
+			<span class="muted small">{inherit ? 'Leave empty to use the collection’s date.' : 'When it was made or taken. Defaults to today.'}</span>
+			{#if errors.date}<span class="error">{errors.date}</span>{/if}
+		</div>
 		{#each FILTER_CATEGORIES as cat (cat.key)}
 			<div class="field">
 				<label for="m-{cat.key}">{cat.label}</label>

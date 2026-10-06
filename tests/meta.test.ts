@@ -46,3 +46,16 @@ describe('image metadata', () => {
 		expect(collectionMetaSchema.safeParse({ title: 'c', medium: 'oil' }).success).toBe(false);
 	});
 });
+
+describe('date', () => {
+	it('accepts a past day and treats empty as unset', () => {
+		expect(imageMetaSchema(true).parse({ title: 'x', date: '2020-02-29' }).date).toBe('2020-02-29');
+		expect(imageMetaSchema(true).parse({ title: 'x', date: '' }).date).toBeNull();
+	});
+
+	it('rejects impossible and future dates', () => {
+		expect(imageMetaSchema(true).safeParse({ title: 'x', date: '2021-02-30' }).success).toBe(false);
+		expect(imageMetaSchema(true).safeParse({ title: 'x', date: '2999-01-01' }).success).toBe(false);
+		expect(imageMetaSchema(true).safeParse({ title: 'x', date: 'yesterday' }).success).toBe(false);
+	});
+});

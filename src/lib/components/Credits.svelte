@@ -1,19 +1,34 @@
 <script lang="ts">
 	import { parseCredit } from '#lib/credit';
 
+	// Fixed locale and zone so server and browser render the same text.
+	const formatDay = (d: string) =>
+		new Date(`${d}T00:00:00Z`).toLocaleDateString('en-GB', {
+			day: 'numeric',
+			month: 'long',
+			year: 'numeric',
+			timeZone: 'UTC'
+		});
+
 	let {
 		credit,
 		submittedBy,
-		author
+		author,
+		date = null
 	}: {
+		date?: string | null;
 		credit: string | null;
 		submittedBy: string | null;
 		author: string | null;
 	} = $props();
 </script>
 
-{#if credit || submittedBy || author}
+{#if credit || submittedBy || author || date}
 	<dl class="credits">
+		{#if date}
+			<dt>Date</dt>
+			<dd>{formatDay(date)}</dd>
+		{/if}
 		{#if credit}
 			<dt>Credit</dt>
 			<dd>
