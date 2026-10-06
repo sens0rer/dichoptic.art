@@ -150,7 +150,7 @@
 				<div class="panel">
 					<h2>Collection</h2>
 					<p class="muted small">
-						Settings here are defaults for every image inside. An image can override them later by editing it.
+						These settings apply to every image in the collection. Any image can have its own settings instead.
 					</p>
 					<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" showPrivate />
 				</div>
