@@ -65,3 +65,7 @@ Notes:
 - With a public bucket, file URLs are unguessable but not access-checked, so a deleted or unapproved pair's files stay reachable to anyone who already has the exact URL. To keep the app's visibility checks on files, leave `FILES_BASE` unset: images are then served through `/files` (bytes pass through Vercel functions, which costs function time and bandwidth).
 - Vercel's free Hobby plan is for non-commercial use, and free-tier limits change, so check them before launch.
 - `npm run build` ends in a symlink error on Windows because of the Vercel adapter; it works on Vercel.
+
+## Credits
+
+The 3D-glasses logo (`src/lib/assets/logo.svg`, `favicon.svg`) is "3D Glasses" by Merlin2525 from [Open Clipart](https://openclipart.org/detail/176790/3d-glasses), released under CC0 (public domain).
