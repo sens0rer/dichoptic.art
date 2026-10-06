@@ -8,6 +8,5 @@
 
 <main>
 	<h1>Submitted by {data.name}</h1>
-	<p class="muted small">Grouped by the name typed at submission; names are not verified accounts.</p>
 	<FeedView {data} showQuery={false} />
 </main>
