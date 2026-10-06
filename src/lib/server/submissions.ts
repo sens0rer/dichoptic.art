@@ -13,12 +13,20 @@ import {
 } from './db';
 import { newFileId, newId } from './ids';
 import type { CollectionMeta, ImageMeta } from './meta';
-import { prepare, UploadError, type Prepared } from './process';
+import {
+	HASH_COLOUR_BITS,
+	HASH_STRUCTURE_BITS,
+	prepare,
+	UploadError,
+	type Prepared
+} from './process';
 import { imageKeys, storePair } from './store';
 import { storage } from './storage';
 import type { SourceMode } from '../vocab';
 
-export const DUPLICATE_DISTANCE = 6;
+export const DUPLICATE_STRUCTURE_DISTANCE = 6;
+// 4 bits per value: about 12 values moved by one of 16 levels. Recompressing barely moves any.
+export const DUPLICATE_COLOUR_DISTANCE = 12;
 const TMP_ID = /^[A-Za-z0-9_-]{16,40}$/;
 
 export interface PairInput {
@@ -50,13 +58,17 @@ export async function preparePair(input: PairInput): Promise<Prepared> {
 export const visibleImageSql = sql`(i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private AND (i.collection_id IS NULL OR EXISTS (
 	SELECT 1 FROM collections vc WHERE vc.id = i.collection_id AND vc.deleted_at IS NULL AND vc.status = 'approved' AND NOT vc.private)))`;
 
+// A duplicate has the same picture AND the same colours: both parts of the fingerprint must be close.
 export async function findDuplicate(phash: string, ignoreId?: string) {
+	const structure = phash.slice(0, HASH_STRUCTURE_BITS);
+	const colour = phash.slice(HASH_STRUCTURE_BITS);
 	const rows = await db.execute<{ id: string; title: string | null }>(sql`
 		SELECT i.id, i.title FROM images i
 		WHERE ${visibleImageSql}
-			AND bit_count(i.phash # ${phash}::bit(64)) <= ${DUPLICATE_DISTANCE}
+			AND bit_count(substring(i.phash from 1 for ${HASH_STRUCTURE_BITS}) # ${structure}::bit(${sql.raw(String(HASH_STRUCTURE_BITS))})) <= ${DUPLICATE_STRUCTURE_DISTANCE}
+			AND bit_count(substring(i.phash from ${HASH_STRUCTURE_BITS + 1} for ${HASH_COLOUR_BITS}) # ${colour}::bit(${sql.raw(String(HASH_COLOUR_BITS))})) <= ${DUPLICATE_COLOUR_DISTANCE}
 			${ignoreId ? sql`AND i.id <> ${ignoreId}` : sql``}
-		ORDER BY bit_count(i.phash # ${phash}::bit(64)) LIMIT 1`);
+		ORDER BY bit_count(substring(i.phash from 1 for ${HASH_STRUCTURE_BITS}) # ${structure}::bit(${sql.raw(String(HASH_STRUCTURE_BITS))})) LIMIT 1`);
 	return rows[0] ?? null;
 }
 

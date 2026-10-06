@@ -92,7 +92,7 @@
 		<label class="inline check">
 			<input type="checkbox" bind:checked={values.private} />
 			<span>
-				Private: only you can see this{subject === 'collection' ? ', and everything in it' : ''}
+				Private: only you can see this
 				<span class="muted small">
 					(site admins can too; it never appears in Browse, search or on other pages)</span
 				>
@@ -107,9 +107,6 @@
 		<div class="field" style="grid-column: 1 / -1">
 			<label for="m-credit">Credit</label>
 			<input id="m-credit" bind:value={values.credit} onpaste={pasteLink} maxlength="500" />
-			<span class="muted small">
-				Credit anyone. To link words, select them and paste an address (or write [word](address)).
-			</span>
 			{#if errors.credit}<span class="error">{errors.credit}</span>{/if}
 		</div>
 		<div class="field">
@@ -132,7 +129,7 @@
 		<div class="field">
 			<label for="m-date">Date</label>
 			<input id="m-date" type="date" bind:value={values.date} />
-			<span class="muted small">{inherit ? 'Leave empty to use the collection’s date.' : 'When it was made or taken. Defaults to today.'}</span>
+			{#if inherit}<span class="muted small">Leave empty to use the collection’s date.</span>{/if}
 			{#if errors.date}<span class="error">{errors.date}</span>{/if}
 		</div>
 		{#each FILTER_CATEGORIES as cat (cat.key)}

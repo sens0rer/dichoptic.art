@@ -39,7 +39,7 @@ export interface Prepared {
 	right: Original | null;
 	// The side-by-side image: the file itself, or the composite of both.
 	pair: Buffer;
-	// 64 characters of 0/1.
+	// 256 characters of 0/1, see fingerprint().
 	phash: string;
 }
 
@@ -65,17 +65,26 @@ async function composite(l: Original, r: Original): Promise<Buffer> {
 		.toBuffer();
 }
 
-// dHash: 9x8 grayscale, one bit per left>right neighbour comparison.
-async function dHash(pair: Buffer): Promise<string> {
-	const px = await upright(pair)
-		.flatten({ background: '#000' })
-		.resize(9, 8, { fit: 'fill' })
-		.greyscale()
-		.raw()
-		.toBuffer();
+// Fingerprint of the pair image, 256 bits, for the duplicate check:
+//  - bits 0-63: dHash of the grayscale picture (9x8, one bit per left>right neighbour comparison),
+//    so the same picture matches after resizing or recompression;
+//  - bits 64-255: a 4x4 colour layout, 4 bits (Gray-coded, 16 levels) per channel per cell, so the
+//    same picture in different colours does NOT match. Colour variants are the point of this site.
+//    Gray code makes the Hamming distance grow with the size of the colour change.
+export const HASH_STRUCTURE_BITS = 64;
+export const HASH_COLOUR_BITS = 192;
+
+async function fingerprint(pair: Buffer): Promise<string> {
+	const base = () => upright(pair).flatten({ background: '#000' });
+	const grey = await base().resize(9, 8, { fit: 'fill' }).greyscale().raw().toBuffer();
 	let bits = '';
 	for (let y = 0; y < 8; y++)
-		for (let x = 0; x < 8; x++) bits += px[y * 9 + x] > px[y * 9 + x + 1] ? '1' : '0';
+		for (let x = 0; x < 8; x++) bits += grey[y * 9 + x] > grey[y * 9 + x + 1] ? '1' : '0';
+	const rgb = await base().resize(4, 4, { fit: 'fill' }).removeAlpha().toColourspace('srgb').raw().toBuffer();
+	for (const v of rgb) {
+		const level = v >> 4;
+		bits += (level ^ (level >> 1)).toString(2).padStart(4, '0');
+	}
 	return bits;
 }
 
@@ -85,7 +94,7 @@ export async function prepare(
 ): Promise<Prepared> {
 	if (mode === 'single_file') {
 		const left = await inspect(buffers.left, 'Image');
-		return { mode, left, right: null, pair: left.buf, phash: await dHash(left.buf) };
+		return { mode, left, right: null, pair: left.buf, phash: await fingerprint(left.buf) };
 	}
 	if (!buffers.right) throw new UploadError('Both images are required');
 	const [left, right] = await Promise.all([
@@ -93,5 +102,5 @@ export async function prepare(
 		inspect(buffers.right, 'Right image')
 	]);
 	const pair = await composite(left, right);
-	return { mode, left, right, pair, phash: await dHash(pair) };
+	return { mode, left, right, pair, phash: await fingerprint(pair) };
 }

@@ -25,7 +25,7 @@ import {
 } from '../../vocab';
 
 const tsvector = customType<{ data: string }>({ dataType: () => 'tsvector' });
-const bit64 = customType<{ data: string }>({ dataType: () => 'bit(64)' });
+const bit256 = customType<{ data: string }>({ dataType: () => 'bit(256)' });
 
 export const dimensionEnum = pgEnum('dimension', DIMENSIONS);
 export const mediumEnum = pgEnum('medium', MEDIUMS);
@@ -123,7 +123,7 @@ export const images = pgTable(
 		thumbH: integer('thumb_h').notNull(),
 		// Bytes stored for this pair (originals + thumbnails), for the storage cap.
 		bytes: integer('bytes').notNull().default(0),
-		phash: bit64('phash').notNull(),
+		phash: bit256('phash').notNull(),
 		collectionId: text('collection_id').references(() => collections.id),
 		ownerId: text('owner_id')
 			.notNull()

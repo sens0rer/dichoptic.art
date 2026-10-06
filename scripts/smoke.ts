@@ -24,11 +24,11 @@ async function call(who: string, path: string, init: any = {}) {
 	return { status: res.status, data };
 }
 
-async function upload(file: string) {
+async function upload(file: string, type = 'image/jpeg') {
 	const bytes = await readFile(file);
-	const p = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/jpeg', size: bytes.length }] } });
+	const p = await call('a', '/api/upload/presign', { json: { files: [{ type, size: bytes.length }] } });
 	const { id, url } = p.data.uploads[0];
-	await fetch(base + url, { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: bytes });
+	await fetch(base + url, { method: 'PUT', headers: { 'content-type': type }, body: bytes });
 	return id as string;
 }
 const S = 'samples/';
@@ -204,3 +204,17 @@ r = await call('a', '/api/images', { json: { meta: { title: 'QA future', date: '
 check('future date rejected', r.status === 400 && !!r.data.errors?.date, r);
 await call('a', `/api/images/${oldId}`, { method: 'DELETE' });
 await call('a', `/api/images/${defId}`, { method: 'DELETE' });
+
+// same picture in different colours is not a duplicate; the same colours are
+const brown = await upload(S + 'avalokiteshvara-left.png', 'image/png');
+r = await call('a', '/api/images', { json: { meta: { title: 'QA brown' }, pair: { mode: 'single_file', left: brown }, confirm: true } });
+const brownId = r.data.id;
+const green = await upload(S + 'avalokiteshvara-right.png', 'image/png');
+r = await call('a', '/api/images', { json: { meta: { title: 'QA green' }, pair: { mode: 'single_file', left: green } } });
+check('different colours: not a duplicate', r.status === 200 && !r.data.duplicate, r);
+const greenId = r.data.id;
+const brown2 = await upload(S + 'avalokiteshvara-left.png', 'image/png');
+r = await call('a', '/api/images', { json: { meta: { title: 'QA brown again' }, pair: { mode: 'single_file', left: brown2 } } });
+check('same colours: duplicate', !!r.data.duplicate, r);
+await call('a', `/api/images/${brownId}`, { method: 'DELETE' });
+await call('a', `/api/images/${greenId}`, { method: 'DELETE' });
