@@ -50,6 +50,20 @@
 		}
 	});
 
+	// Selecting words and pasting a web address turns them into a link, like most editors do.
+	function pasteLink(e: ClipboardEvent) {
+		const input = e.currentTarget as HTMLInputElement;
+		const { selectionStart: a, selectionEnd: b } = input;
+		const pasted = e.clipboardData?.getData('text').trim() ?? '';
+		if (a === null || b === null || a === b || !/^(https?:\/\/)?[^\s/()[\]]+\.[^\s()[\]]+$/i.test(pasted)) return;
+		e.preventDefault();
+		const word = input.value.slice(a, b);
+		const link = `[${word}](${pasted})`;
+		values.credit = input.value.slice(0, a) + link + input.value.slice(b);
+		const end = a + link.length;
+		queueMicrotask(() => input.setSelectionRange(end, end));
+	}
+
 	function pickType(v: string) {
 		other = v === '__other';
 		values.chromacyType = other ? '' : v;
@@ -92,9 +106,9 @@
 	<div class="grid2">
 		<div class="field" style="grid-column: 1 / -1">
 			<label for="m-credit">Credit</label>
-			<input id="m-credit" bind:value={values.credit} maxlength="500" />
+			<input id="m-credit" bind:value={values.credit} onpaste={pasteLink} maxlength="500" />
 			<span class="muted small">
-				Credit anyone. To link words, write [word](address), e.g. Photo by [Jane](janedoe.com).
+				Credit anyone. To link words, select them and paste an address (or write [word](address)).
 			</span>
 			{#if errors.credit}<span class="error">{errors.credit}</span>{/if}
 		</div>
