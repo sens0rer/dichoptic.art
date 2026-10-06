@@ -43,6 +43,6 @@ export const POST = (event) =>
 		const id = await db.transaction((tx) =>
 			createImage(tx, { ownerId: owner.id, meta: meta.data, prepared, pair, collectionId })
 		);
-		await recordSubmissions(clientIp(event));
+		await recordSubmissions(clientIp(event), [{ type: 'image', id }]);
 		return json({ id, recovery: owner.key });
 	});

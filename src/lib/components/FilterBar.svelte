@@ -95,7 +95,7 @@
 				</div>
 			{/each}
 			<div>
-				<label for="f-ctype">Chromacy type</label>
+				<label for="f-ctype">Dichoptic color type</label>
 				<input id="f-ctype" list="f-ctype-list" bind:value={values.chromacyType} placeholder="e.g. TRT" />
 				<datalist id="f-ctype-list">
 					{#each presets as p (p.code)}<option value={p.code}>{p.name}</option>{/each}

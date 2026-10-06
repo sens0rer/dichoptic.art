@@ -1,12 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { fileUrl } from '#lib/urls';
 
 	let {
-		image,
-		prev = null,
-		next = null
+		image
 	}: {
 		image: {
 			title: string;
@@ -19,8 +16,6 @@
 			rightW: number | null;
 			rightH: number | null;
 		};
-		prev?: string | null;
-		next?: string | null;
 	} = $props();
 
 	const two = $derived(image.sourceMode === 'two_files');
@@ -107,9 +102,23 @@
 			: []
 	);
 
+	// iPhone Safari cannot fullscreen page elements, so fall back to a fixed full-window overlay.
+	let overlay = $state(false);
+
 	async function toggleFullscreen() {
-		if (document.fullscreenElement) await document.exitFullscreen();
-		else await stage?.requestFullscreen?.();
+		if (document.fullscreenElement) return void (await document.exitFullscreen());
+		if (overlay) {
+			overlay = false;
+			fullscreen = false;
+		} else {
+			try {
+				await stage!.requestFullscreen();
+			} catch {
+				overlay = true;
+				fullscreen = true;
+			}
+		}
+		queueMicrotask(measure);
 	}
 
 	function onFullscreenChange() {
@@ -122,12 +131,6 @@
 		const t = e.target as HTMLElement;
 		if (t.closest('input, textarea, select, [contenteditable]')) return;
 		switch (e.key) {
-			case 'ArrowLeft':
-				if (prev) void goto(prev);
-				break;
-			case 'ArrowRight':
-				if (next) void goto(next);
-				break;
 			case 'f':
 			case 'F':
 				void toggleFullscreen();
@@ -150,7 +153,7 @@
 <svelte:window onkeydown={onKey} />
 <svelte:document onfullscreenchange={onFullscreenChange} />
 
-<div class="stage" class:full={fullscreen} bind:this={stage} style="--b: {layout?.b ?? 0}px; --gap: {gap}px">
+<div class="stage" class:full={fullscreen} class:overlay data-swipe bind:this={stage} style="--b: {layout?.b ?? 0}px; --gap: {gap}px">
 	{#if two && layout}
 		<div class="pair">
 			{#each order as o, i (i)}
@@ -165,9 +168,13 @@
 	{:else}
 		<img class="single" src={urls.a} alt={image.title} />
 	{/if}
+	{#if fullscreen}
+		<button type="button" class="exit" onclick={toggleFullscreen} aria-label="Exit fullscreen">✕</button>
+	{/if}
 </div>
 
-<div class="controls row">
+<div class="controls">
+	<div class="row">
 	<button type="button" onclick={toggleFullscreen} title="Fullscreen (F)">Fullscreen</button>
 	{#if two}
 		<button type="button" onclick={() => (swapped = !swapped)} class:active={swapped} title="Swap sides (S)">
@@ -192,6 +199,10 @@
 			<span class="muted">{gap}px</span>
 		</label>
 	{/if}
+	</div>
+	<p class="keys muted small">
+		← → previous/next · F fullscreen{two ? ' · O outline · S swap sides' : ''}
+	</p>
 </div>
 
 <style>
@@ -202,8 +213,27 @@
 		width: 100%;
 		background: var(--bg);
 	}
+	.stage {
+		position: relative;
+	}
 	.stage.full {
 		height: 100vh;
+		height: 100dvh;
+	}
+	.stage.overlay {
+		position: fixed;
+		inset: 0;
+		z-index: 60;
+		width: auto;
+	}
+	.exit {
+		position: absolute;
+		top: 0.6em;
+		right: 0.6em;
+		opacity: 0.6;
+	}
+	.stage:not(.overlay) .exit {
+		display: none;
 	}
 	.pair {
 		display: flex;
@@ -228,8 +258,22 @@
 		max-height: 100vh;
 	}
 	.controls {
-		margin: 0.9em 0;
-		gap: 0.8em 1.2em;
+		margin: 0.6em 0 0;
+		padding: 0.6em 0.8em;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: var(--radius);
+	}
+	.controls .row {
+		gap: 0.6em 1.2em;
+	}
+	.keys {
+		margin: 0.5em 0 0;
+	}
+	@media (hover: none) {
+		.keys {
+			display: none;
+		}
 	}
 	input[type='range'] {
 		width: 8em;

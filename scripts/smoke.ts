@@ -63,7 +63,7 @@ const c2 = await upload(S + 'photo_2026-10-06_10-36-09 (2).jpg');
 r = await call('a', '/api/collections', {
 	json: {
 		collection: { title: 'Trees collection', medium: 'photography', tags: ['Trees', 'summer'], submittedBy: 'Smoke', chromacy: 'tri', chromacyType: 'x' },
-		items: [{ title: 'one', pair: { mode: 'two_files', left: c1, right: c2 } }],
+		items: [{ meta: { title: 'one', dimension: '3D' }, pair: { mode: 'two_files', left: c1, right: c2 } }],
 		confirm: true
 	}
 });
@@ -124,9 +124,9 @@ check('deleted page 404', r.status === 404, r.status);
 r = await call('a', `/image/${dupId}`);
 check('deleted page 404 for owner', r.status === 404, r.status);
 const detail = await call('a', `/collection/${colId}`);
-const imgMatch = /\/image\/([A-Za-z0-9]{10})/.exec(detail.data);
-console.log('collection image', imgMatch?.[1]);
-r = await call('a', `/api/images/${imgMatch![1]}`, { method: 'DELETE' });
+// Arrows to neighbouring entries come first in the page; the grid of this collection's pairs is last.
+const imgIds = [...detail.data.matchAll(/href="\/image\/([A-Za-z0-9]{10})"/g)].map((m) => m[1]);
+r = await call('a', `/api/images/${imgIds.at(-1)}`, { method: 'DELETE' });
 check('last image deletion removes collection', r.status === 200);
 r = await call('b', `/collection/${colId}`);
 check('collection 404 after last image deleted', r.status === 404, r.status);

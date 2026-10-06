@@ -23,10 +23,10 @@ export const LABELS: Record<string, string> = {
 };
 
 export const FILTER_CATEGORIES = [
-	{ key: 'dimension', label: 'Dimension', values: DIMENSIONS },
+	{ key: 'dimension', label: '2D / 3D', values: DIMENSIONS },
 	{ key: 'medium', label: 'Medium', values: MEDIUMS },
 	{ key: 'alteration', label: 'Alteration', values: ALTERATIONS },
-	{ key: 'chromacy', label: 'Chromacy', values: CHROMACIES }
+	{ key: 'chromacy', label: 'Dichoptic colors', values: CHROMACIES }
 ] as const;
 
 export const MAX_FILE_BYTES = 20 * 1024 * 1024;

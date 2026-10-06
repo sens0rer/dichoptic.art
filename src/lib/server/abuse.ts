@@ -1,6 +1,6 @@
-import { and, eq, gt, sql } from 'drizzle-orm';
+import { and, desc, eq, gt, inArray, sql } from 'drizzle-orm';
 import { config } from './config';
-import { db, siteState, submissionLog } from './db';
+import { collections, db, images, siteState, submissionLog } from './db';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -21,9 +21,16 @@ export async function assertNotPaused() {
 
 const since = () => new Date(Date.now() - DAY_MS);
 
-// Logs one submission (an image or a collection) and trips the flag / pause thresholds.
-export async function recordSubmissions(ip: string, count = 1) {
-	await db.insert(submissionLog).values(Array.from({ length: count }, () => ({ clientIp: ip })));
+export interface Submitted {
+	type: 'image' | 'collection';
+	id: string;
+}
+
+// Logs submissions (each image or collection counts once) and trips the flag / pause thresholds.
+export async function recordSubmissions(ip: string, submitted: Submitted[]) {
+	await db
+		.insert(submissionLog)
+		.values(submitted.map((s) => ({ clientIp: ip, targetType: s.type, targetId: s.id })));
 	const [{ mine }] = await db
 		.select({ mine: sql<number>`count(*)::int` })
 		.from(submissionLog)
@@ -58,11 +65,36 @@ export async function flaggedClients() {
 	return Promise.all(
 		rows.map(async (r) => {
 			const ip = r.key.slice('flagged:'.length);
-			const [{ n }] = await db
-				.select({ n: sql<number>`count(*)::int` })
+			const log = await db
+				.select()
 				.from(submissionLog)
-				.where(and(eq(submissionLog.clientIp, ip), gt(submissionLog.createdAt, since())));
-			return { ip, since: (r.value as { since: string }).since, last24h: n };
+				.where(and(eq(submissionLog.clientIp, ip), gt(submissionLog.createdAt, since())))
+				.orderBy(desc(submissionLog.createdAt));
+			const ids = (type: 'image' | 'collection') =>
+				log.filter((l) => l.targetType === type).map((l) => l.targetId);
+			const [imgs, cols] = await Promise.all([
+				ids('image').length
+					? db.select({ id: images.id, title: images.title }).from(images).where(inArray(images.id, ids('image')))
+					: [],
+				ids('collection').length
+					? db
+							.select({ id: collections.id, title: collections.title })
+							.from(collections)
+							.where(inArray(collections.id, ids('collection')))
+					: []
+			]);
+			const titles = new Map([...imgs, ...cols].map((t) => [t.id, t.title]));
+			return {
+				ip,
+				since: (r.value as { since: string }).since,
+				last24h: log.length,
+				recent: log.slice(0, 15).map((l) => ({
+					type: l.targetType,
+					id: l.targetId,
+					title: titles.get(l.targetId) ?? null,
+					at: l.createdAt.toISOString()
+				}))
+			};
 		})
 	);
 }

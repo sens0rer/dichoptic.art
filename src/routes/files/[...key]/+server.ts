@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { eq } from 'drizzle-orm';
-import { db, images } from '#lib/server/db';
+import { collections, db, images } from '#lib/server/db';
 import { storage } from '#lib/server/storage';
 import { currentOwner } from '#lib/server/owner';
 
@@ -16,7 +16,11 @@ export async function GET({ params, cookies }) {
 	if (!m) error(404);
 	const [image] = await db.select().from(images).where(eq(images.id, m[1]));
 	if (!image || image.deletedAt) error(404);
-	if (image.status !== 'approved') {
+	const [collection] = image.collectionId
+		? await db.select().from(collections).where(eq(collections.id, image.collectionId))
+		: [];
+	if (collection?.deletedAt) error(404);
+	if (image.status !== 'approved' || (collection && collection.status !== 'approved')) {
 		const owner = await currentOwner(cookies);
 		if (owner?.id !== image.ownerId) error(404);
 	}

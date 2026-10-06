@@ -3,6 +3,7 @@
 	import Credits from '#lib/components/Credits.svelte';
 	import LikeButton from '#lib/components/LikeButton.svelte';
 	import Meta from '#lib/components/Meta.svelte';
+	import NavArrows from '#lib/components/NavArrows.svelte';
 	import OgTags from '#lib/components/OgTags.svelte';
 	import RecoveryNotice from '#lib/components/RecoveryNotice.svelte';
 	import ShareButtons from '#lib/components/ShareButtons.svelte';
@@ -15,7 +16,7 @@
 	async function remove() {
 		if (!confirm('Delete this collection and every pair in it?')) return;
 		const res = await api(`/api/collections/${c.id}`, { method: 'DELETE' });
-		if (res.ok) await goto('/me', { invalidateAll: true });
+		if (res.ok) await goto('/me', { refreshAll: true });
 	}
 </script>
 
@@ -33,7 +34,11 @@
 
 <main>
 	<RecoveryNotice />
-	<a href="/">← Back</a>
+	<div class="row head">
+		<a href={data.back}>← Back</a>
+		<span class="spacer"></span>
+		<NavArrows prev={data.prev} next={data.next} />
+	</div>
 	<h1>{c.title}</h1>
 	{#if !data.live}
 		<p class="panel">
@@ -59,7 +64,7 @@
 	{#if data.tags.length}
 		<ul class="chips tags">
 			{#each data.tags as t (t)}
-				<li class="chip"><a href="/search?tag={encodeURIComponent(t)}">#{t}</a></li>
+				<li class="chip"><a href="/?tag={encodeURIComponent(t)}">#{t}</a></li>
 			{/each}
 		</ul>
 	{/if}
@@ -72,8 +77,6 @@
 						src={thumbUrl(i.thumbPrefix, 800)}
 						srcset={thumbSrcset(i.thumbPrefix)}
 						sizes="(min-width: 900px) 33vw, 100vw"
-						width={i.thumbW}
-						height={i.thumbH}
 						alt={i.title ?? c.title}
 						loading="lazy"
 					/>
@@ -89,6 +92,9 @@
 </main>
 
 <style>
+	.spacer {
+		flex: 1;
+	}
 	.actions {
 		margin-bottom: 1em;
 	}
@@ -120,11 +126,13 @@
 		border-color: #555;
 		text-decoration: none;
 	}
+	/* Fixed tile shape so rows line up; whole pair always visible, letterboxed in the card colour. */
 	img {
 		display: block;
 		width: 100%;
-		height: auto;
-		background: #000;
+		aspect-ratio: 5 / 2;
+		object-fit: contain;
+		background: var(--surface);
 	}
 	.meta {
 		display: flex;

@@ -245,3 +245,8 @@ label.inline {
 	clip: rect(0 0 0 0);
 	white-space: nowrap;
 }
+
+.req {
+	color: var(--danger);
+	font-weight: 600;
+}

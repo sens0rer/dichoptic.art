@@ -22,6 +22,12 @@ describe('image metadata', () => {
 		expect(m.chromacyType).toBeNull();
 	});
 
+	it('accepts a bare domain as a credit link', () => {
+		expect(imageMetaSchema(true).parse({ title: 'x', creditUrl: 'wikipedia.com' }).creditUrl).toBe(
+			'https://wikipedia.com'
+		);
+	});
+
 	it('only accepts http(s) credit links', () => {
 		expect(imageMetaSchema(true).safeParse({ title: 'x', creditUrl: 'javascript:alert(1)' }).success).toBe(false);
 		expect(imageMetaSchema(true).safeParse({ title: 'x', creditUrl: 'https://example.com/a' }).success).toBe(true);

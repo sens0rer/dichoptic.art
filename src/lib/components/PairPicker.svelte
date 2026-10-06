@@ -1,3 +1,8 @@
+<script module lang="ts">
+	// With several pickers on a page (collections), a paste goes to the one you touched last.
+	let lastTouched: symbol | null = null;
+</script>
+
 <script lang="ts">
 	import { onDestroy } from 'svelte';
 	import { api } from '#lib/consent.svelte';
@@ -24,6 +29,8 @@
 	let mode = $state<SourceMode>('two_files');
 	let slots = $state<Record<'left' | 'right', Slot | null>>({ left: null, right: null });
 	let over = $state(false);
+	const me = Symbol();
+	lastTouched = me;
 
 	const sides = $derived(mode === 'single_file' ? (['left'] as const) : (['left', 'right'] as const));
 	const mismatch = $derived(
@@ -116,26 +123,45 @@
 		if (files?.[0]) void take(side, files[0]);
 	}
 
-	function drop(e: DragEvent, side?: 'left' | 'right') {
-		e.preventDefault();
-		e.stopPropagation();
-		over = false;
-		const files = [...(e.dataTransfer?.files ?? [])].filter((f) => f.type.startsWith('image/'));
+	// Files dropped or pasted on the area itself fill the empty sides in order.
+	function place(files: File[]) {
 		if (!files.length) return;
-		if (side) return void take(side, files[0]);
 		if (mode === 'single_file') return void take('left', files[0]);
-		// Dropped on the area itself: fill the empty sides in order.
 		const empty = sides.filter((s) => !slots[s]);
 		const targets = empty.length ? empty : sides;
 		files.slice(0, targets.length).forEach((f, i) => void take(targets[i], f));
 	}
+
+	const images = (list?: FileList | null) =>
+		[...(list ?? [])].filter((f) => f.type.startsWith('image/'));
+
+	function drop(e: DragEvent, side?: 'left' | 'right') {
+		e.preventDefault();
+		e.stopPropagation();
+		over = false;
+		const files = images(e.dataTransfer?.files);
+		if (side && files.length) void take(side, files[0]);
+		else place(files);
+	}
+
+	function paste(e: ClipboardEvent) {
+		if (lastTouched !== me) return;
+		const files = images(e.clipboardData?.files);
+		if (!files.length) return;
+		e.preventDefault();
+		place(files);
+	}
 </script>
+
+<svelte:window onpaste={paste} />
 
 <div
 	class="picker"
 	class:over
 	role="group"
 	aria-label={label || 'Image files'}
+	onpointerenter={() => (lastTouched = me)}
+	onfocusin={() => (lastTouched = me)}
 	ondragover={(e) => {
 		e.preventDefault();
 		over = true;
@@ -154,7 +180,7 @@
 	<p class="muted small">
 		{mode === 'single_file'
 			? 'One file whose left half is the left image and right half is the right image. Kept exactly as uploaded.'
-			: 'A separate left and right image. Drop both onto this area, or one per box.'}
+			: 'A separate left and right image. Drop or paste both onto this area, or one per box.'}
 		JPEG, PNG or WebP, up to 20 MB each.
 	</p>
 
@@ -177,7 +203,7 @@
 				{:else}
 					<label class="drop" ondragover={(e) => e.preventDefault()} ondrop={(e) => drop(e, side)}>
 						<span>{mode === 'two_files' ? (side === 'left' ? 'Left image' : 'Right image') : 'Image'}</span>
-						<span class="muted small">Drop a file or click to browse</span>
+						<span class="muted small">Drop, paste or click to browse</span>
 						<input
 							class="sr-only"
 							type="file"

@@ -12,12 +12,13 @@
 	} = $props();
 </script>
 
-{#if creditName || submittedBy || author}
+{#if creditName || creditUrl || submittedBy || author}
 	<dl class="credits">
-		{#if creditName}
+		{#if creditName || creditUrl}
 			<dt>Credit</dt>
 			<dd>
-				{#if creditUrl}<a href={creditUrl} rel="noopener noreferrer nofollow" target="_blank">{creditName}</a
+				{#if creditUrl}<a href={creditUrl} rel="noopener noreferrer nofollow" target="_blank"
+						>{creditName ?? creditUrl.replace(/^https?:\/\//, '')}</a
 					>{:else}{creditName}{/if}
 			</dd>
 		{/if}

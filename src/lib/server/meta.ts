@@ -24,8 +24,9 @@ const credit = {
 		.trim()
 		.max(500)
 		.nullish()
-		.transform((v) => v || null)
-		.refine((v) => v === null || /^https?:\/\/\S+$/i.test(v), 'Must be an http(s) link'),
+		// A bare "wikipedia.com" is accepted and stored as https://wikipedia.com.
+		.transform((v) => (v ? (/^[a-z][a-z0-9+.-]*:/i.test(v) ? v : `https://${v}`) : null))
+		.refine((v) => v === null || /^https?:\/\/[^\s/]+\.\S+$/i.test(v), 'Enter a valid web address'),
 	submittedBy: text(100),
 	author: text(100)
 };

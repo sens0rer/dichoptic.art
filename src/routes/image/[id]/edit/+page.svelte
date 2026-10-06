@@ -37,7 +37,7 @@
 			message = res.data.error ?? 'Could not save';
 			return;
 		}
-		await goto(`/image/${data.image.id}`, { invalidateAll: true });
+		await goto(`/image/${data.image.id}`, { refreshAll: true });
 	}
 </script>
 

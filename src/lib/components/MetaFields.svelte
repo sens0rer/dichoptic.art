@@ -11,7 +11,8 @@
 		titleRequired = true,
 		inherit = null,
 		inheritedMedium = null,
-		showTitle = true
+		showTitle = true,
+		subject = 'pair'
 	}: {
 		values: Meta;
 		errors?: Record<string, string>;
@@ -21,6 +22,7 @@
 		inherit?: string | null;
 		inheritedMedium?: string | null;
 		showTitle?: boolean;
+		subject?: 'pair' | 'collection';
 	} = $props();
 
 	const blank = $derived(inherit ?? 'Not specified');
@@ -58,13 +60,13 @@
 
 {#if showTitle}
 	<div class="field">
-		<label for="m-title">Title{titleRequired ? '' : ' (optional)'}</label>
+		<label for="m-title">Title{#if titleRequired}<span class="req" title="Required"> *</span>{/if}</label>
 		<input id="m-title" bind:value={values.title} maxlength="200" required={titleRequired} />
 		{#if errors.title}<span class="error">{errors.title}</span>{/if}
 	</div>
 {/if}
 <div class="field">
-	<label for="m-desc">Description (optional)</label>
+	<label for="m-desc">Description</label>
 	<textarea id="m-desc" bind:value={values.description} maxlength="5000"></textarea>
 	{#if errors.description}<span class="error">{errors.description}</span>{/if}
 </div>
@@ -73,20 +75,20 @@
 	<legend>Credit</legend>
 	<div class="grid2">
 		<div class="field">
-			<label for="m-credit">Credit (anyone, optional)</label>
+			<label for="m-credit">Credit</label>
 			<input id="m-credit" bind:value={values.creditName} maxlength="200" />
 		</div>
 		<div class="field">
-			<label for="m-credit-url">Credit link (optional)</label>
-			<input id="m-credit-url" type="url" placeholder="https://" bind:value={values.creditUrl} />
+			<label for="m-credit-url">Credit link</label>
+			<input id="m-credit-url" inputmode="url" placeholder="example.com" bind:value={values.creditUrl} />
 			{#if errors.creditUrl}<span class="error">{errors.creditUrl}</span>{/if}
 		</div>
 		<div class="field">
-			<label for="m-by">Submitted by (optional)</label>
+			<label for="m-by">Submitted by</label>
 			<input id="m-by" bind:value={values.submittedBy} maxlength="100" />
 		</div>
 		<div class="field">
-			<label for="m-author">Author (optional)</label>
+			<label for="m-author">Author</label>
 			<input id="m-author" bind:value={values.author} maxlength="100" disabled={sameAuthor} />
 			<label class="inline small" style="margin-top: 0.35em">
 				<input type="checkbox" bind:checked={sameAuthor} /> Same as submitted by
@@ -96,7 +98,7 @@
 </fieldset>
 
 <fieldset>
-	<legend>About the pair</legend>
+	<legend>About the {subject}</legend>
 	<div class="grid2">
 		{#each FILTER_CATEGORIES as cat (cat.key)}
 			<div class="field">
@@ -109,7 +111,7 @@
 		{/each}
 		{#if typeApplies}
 			<div class="field">
-				<label for="m-ctype">Chromacy type</label>
+				<label for="m-ctype">Dichoptic color type</label>
 				<select id="m-ctype" value={typeSelect} onchange={(e) => pickType(e.currentTarget.value)}>
 					<option value="">Not specified</option>
 					{#each levelPresets as p (p.code)}<option value={p.code}>{p.code} — {p.name}</option>{/each}
@@ -128,7 +130,7 @@
 	</div>
 	{#if photography}
 		<div class="field">
-			<label for="m-filter">Filter info (filter per image, e.g. "red / cyan, Wratten 25")</label>
+			<label for="m-filter">Color filter information (if you have used color filters for your photograph)</label>
 			<input id="m-filter" bind:value={values.filterInfo} maxlength="500" />
 		</div>
 	{/if}

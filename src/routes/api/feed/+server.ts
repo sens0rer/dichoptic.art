@@ -3,7 +3,11 @@ import { z } from 'zod';
 import { anchorOf, listEntries } from '#lib/server/feed';
 import { parseQuery } from '#lib/query';
 
-const anchor = z.object({ ca: z.string(), lc: z.number().int(), id: z.string() });
+const anchor = z.object({
+	ca: z.string().refine((s) => !Number.isNaN(Date.parse(s))),
+	lc: z.number().int().min(0).max(2147483647),
+	id: z.string().max(40)
+});
 
 export async function GET({ url }) {
 	const { filters, sort } = parseQuery(url.searchParams);

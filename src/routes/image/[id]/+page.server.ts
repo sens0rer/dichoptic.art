@@ -31,7 +31,7 @@ export async function load({ params, url, cookies }) {
 		const n = await neighbours(filters, sort, { ca: row.ca, lc: image.likeCount, id: image.id });
 		prev = n.prev ? entryHref(n.prev, ctx) : null;
 		next = n.next ? entryHref(n.next, ctx) : null;
-		back = ctx.size ? `/search?${ctx}` : '/';
+		back = ctx.size ? `/?${ctx}` : '/';
 	}
 
 	return {

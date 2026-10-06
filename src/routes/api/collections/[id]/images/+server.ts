@@ -2,9 +2,9 @@ import { json } from '@sveltejs/kit';
 import { and, eq, isNull } from 'drizzle-orm';
 import { z } from 'zod';
 import { assertNotPaused, recordSubmissions } from '#lib/server/abuse';
-import { body, clientIp, fail, guard } from '#lib/server/api';
+import { body, clientIp, fail, guard, zodFail } from '#lib/server/api';
 import { collections, db } from '#lib/server/db';
-import { imageMetaSchema } from '#lib/server/meta';
+import { imageMetaSchema, type ImageMeta } from '#lib/server/meta';
 import { currentOwner } from '#lib/server/owner';
 import { pairSchema } from '#lib/server/pair';
 import type { Prepared } from '#lib/server/process';
@@ -12,7 +12,7 @@ import { createImage, findDuplicate, preparePair } from '#lib/server/submissions
 
 const schema = z.object({
 	items: z
-		.array(z.object({ title: z.string().max(200).optional(), pair: pairSchema }))
+		.array(z.object({ meta: z.unknown(), pair: pairSchema }))
 		.min(1, 'Add at least one pair')
 		.max(100),
 	confirm: z.boolean().optional()
@@ -33,6 +33,15 @@ export const POST = (event) =>
 		const parsed = schema.safeParse(await body(event));
 		if (!parsed.success) return fail(400, parsed.error.issues[0]?.message ?? 'Invalid request');
 		const { items, confirm } = parsed.data;
+		const ids = items.flatMap((i) => i.pair.right ? [i.pair.left, i.pair.right] : [i.pair.left]);
+		if (new Set(ids).size !== ids.length) return fail(400, 'The same file was added twice');
+
+		const metas: ImageMeta[] = [];
+		for (const [index, item] of items.entries()) {
+			const m = imageMetaSchema(false).safeParse(item.meta ?? {});
+			if (!m.success) return zodFail(m.error, `items.${index}.`);
+			metas.push(m.data);
+		}
 
 		const prepared: Prepared[] = [];
 		for (const item of items) prepared.push(await preparePair(item.pair));
@@ -45,16 +54,23 @@ export const POST = (event) =>
 			if (duplicates.length) return json({ duplicates });
 		}
 
-		await db.transaction(async (tx) => {
+		const imageIds = await db.transaction(async (tx) => {
+			const created: string[] = [];
 			for (const [index, item] of items.entries())
-				await createImage(tx, {
-					ownerId: owner.id,
-					meta: imageMetaSchema(false).parse({ title: item.title }),
-					prepared: prepared[index],
-					pair: item.pair,
-					collectionId: c.id
-				});
+				created.push(
+					await createImage(tx, {
+						ownerId: owner.id,
+						meta: metas[index],
+						prepared: prepared[index],
+						pair: item.pair,
+						collectionId: c.id
+					})
+				);
+			return created;
 		});
-		await recordSubmissions(clientIp(event), items.length);
+		await recordSubmissions(
+			clientIp(event),
+			imageIds.map((id) => ({ type: 'image' as const, id }))
+		);
 		return json({ id: c.id, recovery: owner.key });
 	});

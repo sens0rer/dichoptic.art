@@ -3,15 +3,16 @@
 	import { goto } from '$app/navigation';
 	import MetaFields from '#lib/components/MetaFields.svelte';
 	import PairPicker from '#lib/components/PairPicker.svelte';
-	import { api } from '#lib/consent.svelte';
-	import { emptyMeta, type PairRef } from '#lib/formTypes';
+	import { api, consent, setConsent } from '#lib/consent.svelte';
+	import { emptyMeta, type Meta, type PairRef } from '#lib/formTypes';
 
 	let { data } = $props();
 
 	type Target = 'image' | 'collection' | 'add';
 	interface Row {
 		key: number;
-		title: string;
+		meta: Meta;
+		details: boolean;
 		pair: PairRef | null;
 		busy: boolean;
 	}
@@ -21,15 +22,28 @@
 	let meta = $state(emptyMeta());
 	let single = $state<{ pair: PairRef | null; busy: boolean }>({ pair: null, busy: false });
 	let seq = 0;
-	const newRow = (): Row => ({ key: seq++, title: '', pair: null, busy: false });
+	const newRow = (): Row => ({ key: seq++, meta: emptyMeta(), details: false, pair: null, busy: false });
 	let rows = $state<Row[]>([newRow()]);
-	let cover = $state(0);
+	let cover = $state(0); // key of the row used as the collection cover
 
 	let errors = $state<Record<string, string>>({});
 	let message = $state('');
 	let submitting = $state(false);
+	// Shown once per submit when cookies are not accepted: without them nothing can be edited later.
+	let askCookies = $state(false);
 	let duplicate = $state<{ id: string; title: string | null } | null>(null);
 	let duplicates = $state<{ index: number; id: string; title: string | null }[]>([]);
+
+	const inheritedMedium = $derived(
+		target === 'collection' ? meta.medium : (data.myCollections.find((c) => c.id === addTo)?.medium ?? null)
+	);
+	// Server errors for row i arrive keyed "items.<i>.<field>".
+	const fieldErrors = (i: number) =>
+		Object.fromEntries(
+			Object.entries(errors)
+				.filter(([k]) => k.startsWith(`items.${i}.`))
+				.map(([k, v]) => [k.split('.').pop()!, v])
+		);
 
 	const busy = $derived(target === 'image' ? single.busy : rows.some((r) => r.busy));
 	const ready = $derived(
@@ -60,14 +74,14 @@
 			res = await api('/api/collections', {
 				json: {
 					collection: meta,
-					items: rows.map((r) => ({ title: r.title, pair: r.pair })),
-					cover,
+					items: rows.map((r) => ({ meta: r.meta, pair: r.pair })),
+					cover: Math.max(0, rows.findIndex((r) => r.key === cover)),
 					confirm
 				}
 			});
 		} else {
 			res = await api(`/api/collections/${addTo}/images`, {
-				json: { items: rows.map((r) => ({ title: r.title, pair: r.pair })), confirm }
+				json: { items: rows.map((r) => ({ meta: r.meta, pair: r.pair })), confirm }
 			});
 		}
 		submitting = false;
@@ -124,7 +138,8 @@
 	<form
 		onsubmit={(e) => {
 			e.preventDefault();
-			void submit();
+			if (consent.choice !== 'accepted') askCookies = true;
+			else void submit();
 		}}
 	>
 		{#if target === 'image'}
@@ -137,7 +152,7 @@
 					<p class="muted small">
 						Settings here are defaults for every pair inside. A pair can override them later by editing it.
 					</p>
-					<MetaFields bind:values={meta} {errors} presets={data.presets} />
+					<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" />
 				</div>
 			{:else}
 				<div class="field">
@@ -159,19 +174,35 @@
 								class="link small"
 								onclick={() => {
 									rows = rows.filter((r) => r !== row);
-									if (cover >= rows.length) cover = 0;
+									if (cover === row.key) cover = rows[0].key;
 								}}>Remove pair</button
 							>
 						{/if}
 					</div>
 					<div class="field">
-						<label for="t-{row.key}">Title (optional)</label>
-						<input id="t-{row.key}" bind:value={row.title} maxlength="200" />
+						<label for="t-{row.key}">Title</label>
+						<input id="t-{row.key}" bind:value={row.meta.title} maxlength="200" />
 					</div>
 					<PairPicker bind:pair={row.pair} bind:busy={row.busy} />
+					<button type="button" class="link small" onclick={() => (row.details = !row.details)}>
+						{row.details ? 'Hide details for this pair' : 'Set details for this pair'}
+					</button>
+					{#if row.details}
+						<div class="details">
+							<p class="muted small">Anything left blank uses the collection's value.</p>
+							<MetaFields
+								bind:values={row.meta}
+								errors={fieldErrors(i)}
+								presets={data.presets}
+								showTitle={false}
+								inherit="Same as collection"
+								inheritedMedium={inheritedMedium}
+							/>
+						</div>
+					{/if}
 					{#if target === 'collection' && rows.length > 1}
 						<label class="inline small">
-							<input type="radio" name="cover" checked={cover === i} onchange={() => (cover = i)} />
+							<input type="radio" name="cover" checked={cover === row.key} onchange={() => (cover = row.key)} />
 							Use as the collection cover
 						</label>
 					{/if}
@@ -207,6 +238,37 @@
 			</div>
 		{/if}
 
+		{#if askCookies}
+			<div class="panel">
+				<h3>Before you upload</h3>
+				<p>
+					Without cookies you won't be able to edit or delete this submission later. You'll get a
+					recovery link after uploading; keep it somewhere safe, it is the only way back to your
+					submissions.
+				</p>
+				<div class="row">
+					<button
+						type="button"
+						class="primary"
+						onclick={() => {
+							setConsent('accepted');
+							askCookies = false;
+							void submit();
+						}}>Accept cookies and upload</button
+					>
+					<button
+						type="button"
+						onclick={() => {
+							setConsent('denied');
+							askCookies = false;
+							void submit();
+						}}>Upload without cookies</button
+					>
+					<button type="button" onclick={() => (askCookies = false)}>Cancel</button>
+				</div>
+			</div>
+		{/if}
+
 		{#if message}<p class="error">{message}</p>{/if}
 		<button class="primary" type="submit" disabled={!ready || busy || submitting || data.paused}>
 			{submitting ? 'Submitting…' : busy ? 'Uploading…' : 'Submit'}
@@ -215,6 +277,9 @@
 </main>
 
 <style>
+	.details {
+		margin-top: 0.8em;
+	}
 	.warn {
 		color: #fdd663;
 	}

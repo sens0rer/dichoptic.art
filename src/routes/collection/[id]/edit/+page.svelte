@@ -28,7 +28,7 @@
 			message = res.data.error ?? 'Could not save';
 			return;
 		}
-		await goto(`/collection/${data.collection.id}`, { invalidateAll: true });
+		await goto(`/collection/${data.collection.id}`, { refreshAll: true });
 	}
 </script>
 
@@ -43,7 +43,7 @@
 			void save();
 		}}
 	>
-		<MetaFields bind:values={meta} {errors} presets={data.presets} />
+		<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" />
 
 		<fieldset class="cover">
 			<legend>Cover</legend>

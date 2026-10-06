@@ -27,8 +27,10 @@ function conditions(f: Filters): Cond[] {
 	const inside = (body: SQL) =>
 		sql`EXISTS (SELECT 1 FROM images ci WHERE ci.collection_id = c.id AND ${visibleCollectionImage} AND ${body})`;
 
-	if (f.q) {
-		const tsq = sql`websearch_to_tsquery('simple', ${f.q})`;
+	// Every word matches as a prefix, so "cotton" finds "Cottonwoods".
+	const words = f.q.match(/[\p{L}\p{N}]+/gu);
+	if (words) {
+		const tsq = sql`to_tsquery('simple', ${words.map((w) => `${w}:*`).join(' & ')})`;
 		out.push({
 			image: sql`i.search @@ ${tsq}`,
 			collection: sql`(c.search @@ ${tsq} OR ${inside(sql`ci.search @@ ${tsq}`)})`

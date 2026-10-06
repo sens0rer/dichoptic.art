@@ -11,7 +11,7 @@ const schema = z.object({
 		.array(
 			z.object({
 				type: z.enum(ACCEPTED_TYPES, 'Only JPEG, PNG and WebP are accepted'),
-				size: z.number().int().positive().max(MAX_FILE_BYTES, 'Files can be at most 20 MB')
+				size: z.number().int().min(1, 'The file is empty').max(MAX_FILE_BYTES, 'Files can be at most 20 MB')
 			})
 		)
 		.min(1)

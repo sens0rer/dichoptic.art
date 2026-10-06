@@ -7,4 +7,5 @@ export const pairSchema = z
 		left: z.string(),
 		right: z.string().optional()
 	})
-	.refine((p) => p.mode === 'single_file' || !!p.right, 'Both images are required');
+	.refine((p) => p.mode === 'single_file' || !!p.right, 'Both images are required')
+	.refine((p) => p.left !== p.right, 'The two images must be different files');

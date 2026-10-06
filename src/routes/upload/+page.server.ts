@@ -8,7 +8,7 @@ export async function load({ cookies, url }) {
 	const owner = await currentOwner(cookies);
 	const mine = owner
 		? await db
-				.select({ id: collections.id, title: collections.title })
+				.select({ id: collections.id, title: collections.title, medium: collections.medium })
 				.from(collections)
 				.where(and(eq(collections.ownerId, owner.id), isNull(collections.deletedAt)))
 				.orderBy(desc(collections.createdAt))

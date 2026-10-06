@@ -183,6 +183,9 @@ export const submissionLog = pgTable(
 	{
 		id: bigserial('id', { mode: 'number' }).primaryKey(),
 		clientIp: text('client_ip').notNull(),
+		// What was submitted, so /admin can list a flagged client's recent work.
+		targetType: text('target_type', { enum: ['image', 'collection'] }).notNull(),
+		targetId: text('target_id').notNull(),
 		...timestamps()
 	},
 	(t) => [index().on(t.createdAt), index().on(t.clientIp, t.createdAt)]

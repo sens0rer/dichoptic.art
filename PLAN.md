@@ -117,9 +117,9 @@ Open uploads need a brake. Two thresholds, counted over a rolling 24 h window (e
 - Table `submission_log(client_ip, created_at)` feeds the counts; flagged and paused state lives in a small `site_state` table.
 
 ## Cookie consent
-- Banner on first visit with **Accept** and **Deny**, equal prominence. Text: *"This site uses a cookie only to remember your likes and to let you edit or delete your own submissions. Nothing else about you is stored."*
+- Banner on first visit with **Accept** and **Deny**, equal prominence. Text: *"This site uses cookies only to remember your likes and to let you edit or delete your own submissions. Nothing else about you is stored."*
 - The site sets exactly one cookie (the owner key) and stores no analytics, tracking or other user data. The text must stay true; adding anything else means updating it.
-- The choice is kept in `localStorage` (not a cookie, never sent to the server) so the banner doesn't reappear.
+- The choice is kept in `localStorage` (not a cookie) so the banner does not reappear. It is sent to the server only as a request header on actions that may set the cookie (likes, uploads, opening a recovery link), and never stored.
 - **Accept:** owner key created on first like or upload, as described above.
 - **Deny:** no cookie is ever set. Browsing, search and uploading still work, but likes are disabled (clicking a like re-opens the prompt) and an upload gets no edit access. The post-upload page still shows the recovery link, and opening it prompts for consent first.
 
@@ -170,8 +170,7 @@ One `likes(owner_id, target_type, target_id)` table covering images and collecti
 - `/claim/:key` — adopts an owner key on this device, redirects to `/me`
 - `/image/:id/edit`, `/collection/:id/edit` — owner only
 - `/admin` — moderation queue (when `MODERATION=on`), flagged clients, Resume after a pause; needs `ADMIN_TOKEN`
-- `/` — feeds (tabs: Newest | Most liked)
-- `/search`
+- `/` — Browse: feeds (tabs: Newest | Most liked) with the search box and filters
 - `/image/:id` — large pair, swap-sides control (two-file pairs), credit, submitted by / author (when set), tags, filter info, like, collection link
 - `/collection/:id` — master info header + grid
 - `/by/:name` — everything submitted under a name

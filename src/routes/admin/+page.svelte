@@ -34,12 +34,22 @@
 
 		<h2>Flagged</h2>
 		{#each data.flagged as f (f.ip)}
-			<div class="panel row" style="justify-content: space-between">
-				<span><code>{f.ip}</code> <span class="muted small">{f.last24h} submissions in 24 h</span></span>
-				<form method="post" action="?/clearFlag" use:enhance>
-					<input type="hidden" name="ip" value={f.ip} />
-					<button>Dismiss</button>
-				</form>
+			<div class="panel">
+				<div class="row" style="justify-content: space-between">
+					<span><code>{f.ip}</code> <span class="muted small">{f.last24h} submissions in 24 h</span></span>
+					<form method="post" action="?/clearFlag" use:enhance>
+						<input type="hidden" name="ip" value={f.ip} />
+						<button>Dismiss</button>
+					</form>
+				</div>
+				<ul class="recent small">
+					{#each f.recent as s (s.type + s.id)}
+						<li>
+							<a href="/{s.type}/{s.id}">{s.title ?? `(untitled ${s.type})`}</a>
+							<span class="muted">{s.type} · {new Date(s.at).toLocaleString()}</span>
+						</li>
+					{/each}
+				</ul>
 			</div>
 		{:else}
 			<p class="muted">No flagged clients.</p>
@@ -85,6 +95,13 @@
 {/snippet}
 
 <style>
+	.recent {
+		list-style: none;
+		padding: 0;
+		margin: 0.6em 0 0;
+		display: grid;
+		gap: 0.2em;
+	}
 	.thumbs {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));

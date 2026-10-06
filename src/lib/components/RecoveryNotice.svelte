@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import QrCode from './QrCode.svelte';
 	import { page } from '$app/state';
 
 	let key = $state<string | null>(null);
@@ -24,7 +25,8 @@
 			It is the only way to edit or delete your submissions from another device or if you clear your
 			cookies. Anyone with it can edit and delete them.
 		</span>
-		<div class="row" style="margin-top: 0.6em">
+		<div class="row" style="margin-top: 0.6em; align-items: flex-start">
+			<QrCode value={link} size={112} />
 			<input readonly value={link} onfocus={(e) => e.currentTarget.select()} aria-label="Recovery link" style="flex: 1; min-width: 14em" />
 			<button
 				type="button"

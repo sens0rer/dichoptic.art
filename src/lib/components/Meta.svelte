@@ -16,11 +16,11 @@
 
 	const rows = $derived(
 		[
-			['Dimension', fields.dimension, 'dimension'],
+			['2D / 3D', fields.dimension, 'dimension'],
 			['Medium', fields.medium, 'medium'],
 			['Alteration', fields.alteration, 'alteration'],
-			['Chromacy', fields.chromacy, 'chromacy'],
-			['Chromacy type', fields.chromacyType, 'chromacyType'],
+			['Dichoptic colors', fields.chromacy, 'chromacy'],
+			['Dichoptic color type', fields.chromacyType, 'chromacyType'],
 			['Filters', fields.filterInfo, null]
 		].filter((r) => r[1]) as [string, string, string | null][]
 	);
@@ -32,7 +32,7 @@
 			<li class="chip" title={label}>
 				<span class="muted">{label}:</span>
 				{#if key}
-					<a href="/search?{key}={encodeURIComponent(value)}">{LABELS[value] ?? value}</a>
+					<a href="/?{key}={encodeURIComponent(value)}">{LABELS[value] ?? value}</a>
 				{:else}
 					{value}
 				{/if}

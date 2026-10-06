@@ -11,7 +11,7 @@
 		working = true;
 		const res = await api('/api/claim', { json: { key: data.key } });
 		working = false;
-		if (res.ok) await goto('/me', { invalidateAll: true });
+		if (res.ok) await goto('/me', { refreshAll: true });
 		else message = res.data.error ?? 'Could not use this link';
 	}
 

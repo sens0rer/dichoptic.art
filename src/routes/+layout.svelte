@@ -12,7 +12,6 @@
 
 	const links = [
 		{ href: '/', label: 'Browse' },
-		{ href: '/search', label: 'Search' },
 		{ href: '/upload', label: 'Upload' },
 		{ href: '/me', label: 'My submissions' }
 	];
@@ -38,16 +37,20 @@
 
 {#if needsPrompt()}
 	<div class="consent" role="dialog" aria-label="Cookie notice">
-		<p>
-			This site uses a cookie only to remember your likes and to let you edit or delete your own
-			submissions. Nothing else about you is stored.
-		</p>
-		<div class="row">
+		{#if consent.choice === 'denied'}
+			<p>
+				You turned cookies off, so likes are disabled and uploads from this browser can't be edited
+				or deleted later. Accept to turn them on; it is the only thing the cookies are used for.
+			</p>
+		{:else}
+			<p>
+				This site uses cookies only to remember your likes and to let you edit or delete your own
+				submissions. Nothing else about you is stored.
+			</p>
+		{/if}
+		<div class="row choices">
 			<button class="primary" onclick={() => setConsent('accepted')}>Accept</button>
 			<button class="primary" onclick={() => setConsent('denied')}>Deny</button>
-			{#if consent.choice === 'denied'}
-				<span class="muted small">Currently denied: likes are off.</span>
-			{/if}
 		</div>
 	</div>
 {/if}
@@ -100,6 +103,9 @@
 	}
 	.consent p {
 		margin: 0 0 0.8em;
+	}
+	.choices {
+		justify-content: center;
 	}
 	.consent button {
 		min-width: 6em;

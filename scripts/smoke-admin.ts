@@ -91,6 +91,8 @@ r = await call('b', '/api/feed');
 check('browsing works while paused', r.status === 200);
 r = await call('admin', '/admin');
 check('flagged listed', r.data.includes('Flagged') && r.data.includes('submissions in 24 h'));
+r = await call('admin', '/admin');
+check('flagged client lists what it submitted', /recent[\s\S]*Spam \d/.test(r.data.split('Moderation queue')[0]), r.data.slice(0, 100));
 r = await call('admin', '/admin?/resume', { form: {} });
 r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/jpeg', size: 10 }] } });
 check('resumed', r.status === 200, r);
@@ -104,3 +106,4 @@ const rid = r.data.id;
 r = await call('admin', '/admin?/reject', { form: { type: 'image', id: rid, reason: 'nope' } });
 r = await call('a', '/me');
 check('owner sees rejection', r.data.includes('nope') || r.data.includes('rejected'));
+

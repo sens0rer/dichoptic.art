@@ -51,14 +51,19 @@ export async function api<T = Record<string, unknown>>(
 	path: string,
 	init: { method?: string; json?: unknown } = {}
 ): Promise<ApiResult<T>> {
-	const res = await fetch(path, {
-		method: init.method ?? (init.json ? 'POST' : 'GET'),
-		headers: {
-			...(init.json ? { 'content-type': 'application/json' } : {}),
-			...(consent.choice === 'accepted' ? { 'x-consent': 'accepted' } : {})
-		},
-		body: init.json ? JSON.stringify(init.json) : undefined
-	});
+	let res: Response;
+	try {
+		res = await fetch(path, {
+			method: init.method ?? (init.json ? 'POST' : 'GET'),
+			headers: {
+				...(init.json ? { 'content-type': 'application/json' } : {}),
+				...(consent.choice === 'accepted' ? { 'x-consent': 'accepted' } : {})
+			},
+			body: init.json ? JSON.stringify(init.json) : undefined
+		});
+	} catch {
+		return { ok: false, status: 0, data: { error: 'Network problem. Check your connection and try again.' } } as ApiResult<T>;
+	}
 	const data = await res.json().catch(() => ({ error: 'Unexpected server response' }));
 	return { ok: res.ok, status: res.status, data };
 }

@@ -111,7 +111,13 @@ export async function suggestTags(prefix: string, limit = 8): Promise<string[]> 
 	const rows = await db
 		.select({ name: tags.name })
 		.from(tags)
-		.where(sql`${tags.name} LIKE ${p + '%'}`)
+		.where(
+			sql`${tags.name} LIKE ${p + '%'} AND (
+				EXISTS (SELECT 1 FROM image_tags it JOIN images i ON i.id = it.image_id
+					WHERE it.tag_id = ${tags.id} AND i.deleted_at IS NULL AND i.status = 'approved')
+				OR EXISTS (SELECT 1 FROM collection_tags ct JOIN collections c ON c.id = ct.collection_id
+					WHERE ct.tag_id = ${tags.id} AND c.deleted_at IS NULL AND c.status = 'approved'))`
+		)
 		.orderBy(asc(tags.name))
 		.limit(limit);
 	return rows.map((r) => r.name);

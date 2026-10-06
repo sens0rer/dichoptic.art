@@ -1,6 +1,7 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { refreshAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import QrCode from '#lib/components/QrCode.svelte';
 	import { api } from '#lib/consent.svelte';
 	import { thumbUrl } from '#lib/urls';
 
@@ -10,7 +11,7 @@
 	async function remove(type: 'images' | 'collections', id: string, what: string) {
 		if (!confirm(`Delete this ${what}?`)) return;
 		const res = await api(`/api/${type}/${id}`, { method: 'DELETE' });
-		if (res.ok) await invalidateAll();
+		if (res.ok) await refreshAll();
 	}
 
 	const link = $derived(data.owner ? `${page.url.origin}${data.recovery}` : '');
@@ -21,12 +22,12 @@
 <main>
 	<h1>My submissions</h1>
 
-	{#if !data.owner}
+	{#if !data.owner || (data.collections.length === 0 && data.images.length === 0)}
 		<div class="empty">
-			<p>Nothing here on this device.</p>
+			<p>No submissions on this browser.</p>
 			<p class="small">
-				Submissions are tied to a cookie, not an account. If you accepted cookies when you uploaded, they
-				appear here; on another device open your recovery link.
+				Uploaded from another device or browser? On that one, open My submissions and copy the recovery
+				link (or scan its QR code with this device), then open it here.
 			</p>
 			<a class="btn" href="/upload">Upload</a>
 		</div>
@@ -34,23 +35,19 @@
 		<div class="panel">
 			<strong>Recovery link</strong>
 			<span class="muted small"> — open it on any device to manage these submissions there. Keep it private.</span>
-			<div class="row" style="margin-top: 0.5em">
-				<input readonly value={link} onfocus={(e) => e.currentTarget.select()} aria-label="Recovery link" style="flex: 1; min-width: 14em" />
-				<button
-					onclick={async () => {
-						await navigator.clipboard.writeText(link);
-						copied = true;
-					}}>{copied ? 'Copied' : 'Copy'}</button
-				>
+			<div class="row" style="margin-top: 0.6em; align-items: flex-start">
+				<QrCode value={link} />
+				<div style="flex: 1; min-width: 14em" class="row">
+					<input readonly value={link} onfocus={(e) => e.currentTarget.select()} aria-label="Recovery link" style="flex: 1" />
+					<button
+						onclick={async () => {
+							await navigator.clipboard.writeText(link);
+							copied = true;
+						}}>{copied ? 'Copied' : 'Copy'}</button
+					>
+				</div>
 			</div>
 		</div>
-
-		{#if data.collections.length === 0 && data.images.length === 0}
-			<div class="empty">
-				<p>You have not submitted anything yet.</p>
-				<a class="btn primary" href="/upload">Upload a pair</a>
-			</div>
-		{/if}
 
 		{#if data.collections.length}
 			<h2>Collections</h2>

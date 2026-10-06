@@ -13,19 +13,28 @@
 	let items = $state<Entry[]>(untrack(() => entries));
 	let next = $state<string | null>(untrack(() => cursor));
 	let loading = $state(false);
+	let failed = $state(false);
+	const filtered = $derived([...new URLSearchParams(ctx).keys()].some((k) => k !== 'sort'));
 
 	async function more() {
 		if (!next || loading) return;
 		loading = true;
-		const params = new URLSearchParams(ctx);
-		params.set('cursor', next);
-		const res = await fetch(`/api/feed?${params}`);
-		if (res.ok) {
+		failed = false;
+		try {
+			const params = new URLSearchParams(ctx);
+			params.set('cursor', next);
+			const res = await fetch(`/api/feed?${params}`);
+			if (!res.ok) throw new Error();
 			const data = await res.json();
-			items = [...items, ...data.entries];
+			// Like counts can shift between pages, so skip anything already shown.
+			const seen = new Set(items.map((e) => e.type + e.id));
+			items = [...items, ...data.entries.filter((e: Entry) => !seen.has(e.type + e.id))];
 			next = data.cursor;
+		} catch {
+			failed = true;
+		} finally {
+			loading = false;
 		}
-		loading = false;
 	}
 
 	const params = $derived(new URLSearchParams(ctx));
@@ -33,8 +42,13 @@
 
 {#if items.length === 0}
 	<div class="empty">
-		<p>Nothing here yet.</p>
-		<a class="btn" href="/upload">Upload the first pair</a>
+		{#if filtered}
+			<p>No matches.</p>
+			<a class="btn" href="/">Clear search and filters</a>
+		{:else}
+			<p>Nothing here yet.</p>
+			<a class="btn" href="/upload">Upload the first pair</a>
+		{/if}
 	</div>
 {:else}
 	<ul class="grid">
@@ -45,15 +59,13 @@
 						src={thumbUrl(e.thumbPrefix, 800)}
 						srcset={thumbSrcset(e.thumbPrefix)}
 						sizes="(min-width: 900px) 33vw, 100vw"
-						width={e.thumbW}
-						height={e.thumbH}
 						alt={e.title ?? 'Untitled'}
 						loading="lazy"
 					/>
 					<span class="meta">
 						<span class="title">{e.title ?? 'Untitled'}</span>
 						<span class="muted small">
-							{#if e.type === 'collection'}{e.count} pairs ·{/if}
+							{#if e.type === 'collection'}{e.count} {e.count === 1 ? 'pair' : 'pairs'} ·{/if}
 							♥ {e.likeCount}
 						</span>
 					</span>
@@ -65,7 +77,10 @@
 		{/each}
 	</ul>
 	{#if next}
-		<div class="more"><button onclick={more} disabled={loading}>{loading ? 'Loading…' : 'Load more'}</button></div>
+		<div class="more">
+			<button onclick={more} disabled={loading}>{loading ? 'Loading…' : 'Load more'}</button>
+			{#if failed}<p class="error">Could not load more. Try again.</p>{/if}
+		</div>
 	{/if}
 {/if}
 
@@ -90,11 +105,13 @@
 		border-color: #555;
 		text-decoration: none;
 	}
+	/* Fixed tile shape so rows line up; whole pair always visible, letterboxed in the card colour. */
 	img {
 		display: block;
 		width: 100%;
-		height: auto;
-		background: #000;
+		aspect-ratio: 5 / 2;
+		object-fit: contain;
+		background: var(--surface);
 	}
 	.meta {
 		display: flex;
