@@ -59,6 +59,8 @@ p {
 }
 
 main {
+	/* Long unbroken text (addresses, credits) wraps instead of pushing the page sideways. */
+	overflow-wrap: anywhere;
 	max-width: 1500px;
 	margin: 0 auto;
 	padding: var(--gutter);

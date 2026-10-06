@@ -49,7 +49,7 @@
 <style>
 	.credits {
 		display: grid;
-		grid-template-columns: max-content 1fr;
+		grid-template-columns: max-content minmax(0, 1fr);
 		gap: 0.2em 1em;
 		margin: 0 0 1em;
 	}
