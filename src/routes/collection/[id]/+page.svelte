@@ -1,13 +1,14 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Credits from '#lib/components/Credits.svelte';
+	import LinkedText from '#lib/components/LinkedText.svelte';
 	import LikeButton from '#lib/components/LikeButton.svelte';
 	import Meta from '#lib/components/Meta.svelte';
 	import NavArrows from '#lib/components/NavArrows.svelte';
 	import OgTags from '#lib/components/OgTags.svelte';
 	import RecoveryNotice from '#lib/components/RecoveryNotice.svelte';
 	import ShareButtons from '#lib/components/ShareButtons.svelte';
-	import { creditText } from '#lib/credit';
+	import { plainText } from '#lib/links';
 	import { api } from '#lib/consent.svelte';
 	import { thumbSrcset, thumbUrl } from '#lib/urls';
 
@@ -26,7 +27,7 @@
 		publicUrl={data.publicUrl}
 		path="/collection/{c.id}"
 		title={c.title}
-		description={c.description ?? ([creditText(c.credit), c.submittedBy].filter(Boolean).join(' · ') || null)}
+		description={(c.description ? plainText(c.description) : null) ?? ([plainText(c.credit), c.submittedBy].filter(Boolean).join(' · ') || null)}
 		thumbPrefix={data.cover.thumbPrefix}
 	/>
 {/if}
@@ -64,7 +65,7 @@
 		{/if}
 	</div>
 
-	{#if c.description}<p class="desc">{c.description}</p>{/if}
+	{#if c.description}<p class="desc"><LinkedText text={c.description} /></p>{/if}
 	<Credits date={c.date} credit={c.credit} submittedBy={c.submittedBy} author={c.author} />
 	<Meta fields={c} />
 	{#if data.tags.length}

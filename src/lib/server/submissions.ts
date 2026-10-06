@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
-import { creditText } from '../credit';
+import { plainText } from '../links';
 import { config } from './config';
 import {
 	collections,
@@ -101,10 +101,10 @@ const searchText = (parts: (string | null)[], tagNames: string[]) =>
 	[...parts, ...tagNames].filter(Boolean).join(' ');
 
 const imageSearch = (m: ImageMeta) =>
-	searchText([m.title, m.description, creditText(m.credit), m.submittedBy, m.author], m.tags);
+	searchText([m.title, plainText(m.description), plainText(m.credit), m.submittedBy, m.author], m.tags);
 
 const collectionSearch = (m: CollectionMeta) =>
-	searchText([m.title, m.description, creditText(m.credit), m.submittedBy, m.author], m.tags);
+	searchText([m.title, plainText(m.description), plainText(m.credit), m.submittedBy, m.author], m.tags);
 
 async function effectiveMedium(tx: Reader, collectionId: string | null, own: string | null) {
 	if (own || !collectionId) return own;

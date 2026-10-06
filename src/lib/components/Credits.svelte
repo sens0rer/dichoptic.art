@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { parseCredit } from '#lib/credit';
+	import LinkedText from './LinkedText.svelte';
 
 	// Fixed locale and zone so server and browser render the same text.
 	const formatDay = (d: string) =>
@@ -32,11 +32,7 @@
 		{#if credit}
 			<dt>Credit</dt>
 			<dd>
-				{#each parseCredit(credit) as part, i (i)}{#if part.href}<a
-							href={part.href}
-							rel="noopener noreferrer nofollow"
-							target="_blank">{part.text}</a
-						>{:else}{part.text}{/if}{/each}
+				<LinkedText text={credit} />
 			</dd>
 		{/if}
 		{#if author}

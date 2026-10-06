@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { normalizeCredit } from '../credit';
+import { normalizeLinks } from '../links';
 import { ALTERATIONS, CHROMACIES, DIMENSIONS, MEDIUMS } from '../vocab';
 
 const text = (max: number) =>
@@ -24,21 +24,25 @@ const isDay = (v: string) =>
 // One day of slack so a visitor ahead of the server's time zone can still pick "today".
 const tomorrow = () => new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-const credit = {
-	credit: z
+// Text where [word](address) makes a link; bare addresses get https:// added, non-web ones are rejected.
+const linkedText = (max: number) =>
+	z
 		.string()
 		.trim()
-		.max(500)
+		.max(max)
 		.nullish()
 		.transform((v, ctx) => {
 			if (!v) return null;
-			const r = normalizeCredit(v);
+			const r = normalizeLinks(v);
 			if ('error' in r) {
 				ctx.addIssue({ code: 'custom', message: r.error });
 				return z.NEVER;
 			}
 			return r.value;
-		}),
+		});
+
+const credit = {
+	credit: linkedText(500),
 	submittedBy: text(100),
 	author: text(100)
 };
@@ -73,7 +77,7 @@ export const imageMetaSchema = (titleRequired: boolean) =>
 	z
 		.object({
 			title: titleRequired ? z.string().trim().min(1, 'Title is required').max(200) : text(200),
-			description: text(5000),
+			description: linkedText(5000),
 			...credit,
 			...classification
 		})
@@ -82,7 +86,7 @@ export const imageMetaSchema = (titleRequired: boolean) =>
 export const collectionMetaSchema = z
 	.object({
 		title: z.string().trim().min(1, 'Title is required').max(200),
-		description: text(5000),
+		description: linkedText(5000),
 		...credit,
 		...classification
 	})

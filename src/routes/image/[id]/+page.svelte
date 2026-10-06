@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import Credits from '#lib/components/Credits.svelte';
+	import LinkedText from '#lib/components/LinkedText.svelte';
 	import LikeButton from '#lib/components/LikeButton.svelte';
 	import NavArrows from '#lib/components/NavArrows.svelte';
 	import Meta from '#lib/components/Meta.svelte';
@@ -8,14 +9,14 @@
 	import PairViewer from '#lib/components/PairViewer.svelte';
 	import RecoveryNotice from '#lib/components/RecoveryNotice.svelte';
 	import ShareButtons from '#lib/components/ShareButtons.svelte';
-	import { creditText } from '#lib/credit';
+	import { plainText } from '#lib/links';
 	import { api } from '#lib/consent.svelte';
 
 	let { data } = $props();
 	const image = $derived(data.image);
 
 	const fallbackDescription = $derived(
-		image.description ?? ([creditText(image.credit), image.submittedBy].filter(Boolean).join(' · ') || null)
+		(image.description ? plainText(image.description) : null) ?? ([plainText(image.credit), image.submittedBy].filter(Boolean).join(' · ') || null)
 	);
 
 	async function remove() {
@@ -83,7 +84,7 @@
 
 	<section class="info">
 		<div>
-			{#if image.description}<p class="desc">{image.description}</p>{/if}
+			{#if image.description}<p class="desc"><LinkedText text={image.description} /></p>{/if}
 			<Credits
 				date={data.eff.date}
 				credit={image.credit}

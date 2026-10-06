@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { creditText } from '#lib/credit';
+	import { plainText } from '#lib/links';
 	import { thumbUrl } from '#lib/urls';
 
 	let { data, form } = $props();
@@ -69,7 +69,7 @@
 		{#each data.queue.collections as c (c.id)}
 			<div class="panel">
 				<h3>Collection: <a href="/collection/{c.id}">{c.title}</a></h3>
-				<p class="muted small">{c.images.length} pairs · {c.submittedBy ?? (creditText(c.credit) || 'anonymous')}</p>
+				<p class="muted small">{c.images.length} pairs · {c.submittedBy ?? (plainText(c.credit) || 'anonymous')}</p>
 				<div class="thumbs">
 					{#each c.images as i (i.id)}<img src={thumbUrl(i.thumbPrefix, 400)} alt={i.title ?? ''} />{/each}
 				</div>
@@ -79,7 +79,7 @@
 		{#each data.queue.images as i (i.id)}
 			<div class="panel">
 				<h3>Pair: <a href="/image/{i.id}">{i.title ?? 'Untitled'}</a></h3>
-				<p class="muted small">{i.submittedBy ?? (creditText(i.credit) || 'anonymous')}{i.collectionId ? ' · added to an approved collection' : ''}</p>
+				<p class="muted small">{i.submittedBy ?? (plainText(i.credit) || 'anonymous')}{i.collectionId ? ' · added to an approved collection' : ''}</p>
 				<img class="big" src={thumbUrl(i.thumbPrefix, 800)} alt={i.title ?? ''} />
 				{@render review('image', i.id)}
 			</div>

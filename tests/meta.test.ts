@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { creditText, parseCredit } from '../src/lib/credit';
+import { plainText, parseLinks } from '../src/lib/links';
 import { collectionMetaSchema, imageMetaSchema } from '../src/lib/server/meta';
 
 describe('image metadata', () => {
@@ -26,7 +26,7 @@ describe('image metadata', () => {
 	it('links words in credit and adds https:// to bare addresses', () => {
 		const m = imageMetaSchema(true).parse({ title: 'x', credit: 'Photo by [Jane](janedoe.com) and Bob' });
 		expect(m.credit).toBe('Photo by [Jane](https://janedoe.com) and Bob');
-		expect(parseCredit(m.credit!)).toEqual([
+		expect(parseLinks(m.credit!)).toEqual([
 			{ text: 'Photo by ' },
 			{ text: 'Jane', href: 'https://janedoe.com' },
 			{ text: ' and Bob' }
@@ -38,8 +38,14 @@ describe('image metadata', () => {
 		expect(imageMetaSchema(true).safeParse({ title: 'x', credit: '[x](hello)' }).success).toBe(false);
 	});
 
+	it('links words in descriptions the same way', () => {
+		const m = imageMetaSchema(true).parse({ title: 'x', description: 'Shot on [Mt. Hood](wikipedia.org/wiki/Mount_Hood).' });
+		expect(m.description).toBe('Shot on [Mt. Hood](https://wikipedia.org/wiki/Mount_Hood).');
+		expect(imageMetaSchema(true).safeParse({ title: 'x', description: '[a](javascript:alert(1))' }).success).toBe(false);
+	});
+
 	it('shows credit without link syntax in search text', () => {
-		expect(creditText('Photo by [Jane](https://janedoe.com)')).toBe('Photo by Jane');
+		expect(plainText('Photo by [Jane](https://janedoe.com)')).toBe('Photo by Jane');
 	});
 
 	it('rejects unknown vocabulary values', () => {

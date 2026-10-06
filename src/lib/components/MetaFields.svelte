@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import TagInput from './TagInput.svelte';
+	import { linkOnPaste } from '#lib/linkPaste';
 	import type { Meta, Preset } from '#lib/formTypes';
 	import { FILTER_CATEGORIES, LABELS } from '#lib/vocab';
 
@@ -50,20 +51,6 @@
 		}
 	});
 
-	// Selecting words and pasting a web address turns them into a link, like most editors do.
-	function pasteLink(e: ClipboardEvent) {
-		const input = e.currentTarget as HTMLInputElement;
-		const { selectionStart: a, selectionEnd: b } = input;
-		const pasted = e.clipboardData?.getData('text').trim() ?? '';
-		if (a === null || b === null || a === b || !/^(https?:\/\/)?[^\s/()[\]]+\.[^\s()[\]]+$/i.test(pasted)) return;
-		e.preventDefault();
-		const word = input.value.slice(a, b);
-		const link = `[${word}](${pasted})`;
-		values.credit = input.value.slice(0, a) + link + input.value.slice(b);
-		const end = a + link.length;
-		queueMicrotask(() => input.setSelectionRange(end, end));
-	}
-
 	function pickType(v: string) {
 		other = v === '__other';
 		values.chromacyType = other ? '' : v;
@@ -83,7 +70,12 @@
 {/if}
 <div class="field">
 	<label for="m-desc">Description</label>
-	<textarea id="m-desc" bind:value={values.description} maxlength="5000"></textarea>
+	<textarea
+		id="m-desc"
+		bind:value={values.description}
+		onpaste={(e) => linkOnPaste(e, (v) => (values.description = v))}
+		maxlength="5000"
+	></textarea>
 	{#if errors.description}<span class="error">{errors.description}</span>{/if}
 </div>
 
@@ -106,7 +98,7 @@
 	<div class="grid2">
 		<div class="field" style="grid-column: 1 / -1">
 			<label for="m-credit">Credit</label>
-			<input id="m-credit" bind:value={values.credit} onpaste={pasteLink} maxlength="500" />
+			<input id="m-credit" bind:value={values.credit} onpaste={(e) => linkOnPaste(e, (v) => (values.credit = v))} maxlength="500" />
 			{#if errors.credit}<span class="error">{errors.credit}</span>{/if}
 		</div>
 		<div class="field">

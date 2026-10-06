@@ -1,5 +1,5 @@
-// Credit is free text where words can carry links, written as [word](address).
-export interface CreditPart {
+// Free text (credit, description) where words can carry links, written as [word](address).
+export interface LinkedPart {
 	text: string;
 	href?: string;
 }
@@ -10,8 +10,8 @@ const SAFE = /^https?:\/\/[^\s/]+\.\S+$/i;
 const withScheme = (url: string) => (/^[a-z][a-z0-9+.-]*:/i.test(url) ? url : `https://${url}`);
 
 // Splits into plain and linked parts. A link whose address is not a web address stays plain text.
-export function parseCredit(source: string): CreditPart[] {
-	const parts: CreditPart[] = [];
+export function parseLinks(source: string): LinkedPart[] {
+	const parts: LinkedPart[] = [];
 	let last = 0;
 	for (const m of source.matchAll(LINK)) {
 		if (m.index > last) parts.push({ text: source.slice(last, m.index) });
@@ -23,11 +23,11 @@ export function parseCredit(source: string): CreditPart[] {
 	return parts;
 }
 
-export const creditText = (source: string | null) =>
-	source ? parseCredit(source).map((p) => p.text).join('') : '';
+export const plainText = (source: string | null) =>
+	source ? parseLinks(source).map((p) => p.text).join('') : '';
 
 // For saving: adds https:// to bare addresses, and rejects anything that is not a web address.
-export function normalizeCredit(source: string): { value: string } | { error: string } {
+export function normalizeLinks(source: string): { value: string } | { error: string } {
 	let bad = false;
 	const value = source.replace(LINK, (_, label: string, url: string) => {
 		const href = withScheme(url);
@@ -35,6 +35,6 @@ export function normalizeCredit(source: string): { value: string } | { error: st
 		return `[${label}](${href})`;
 	});
 	return bad
-		? { error: 'Links in credit must be web addresses, e.g. [Wikipedia](wikipedia.org)' }
+		? { error: 'Links must be web addresses, e.g. [Wikipedia](wikipedia.org)' }
 		: { value };
 }
