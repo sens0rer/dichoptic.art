@@ -1,6 +1,7 @@
 // Needs the dev server started with MODERATION=on, FLAG_THRESHOLD=2, PAUSE_THRESHOLD=4 and
 // SITE_PAUSE_THRESHOLD=1000 (see README). Exercises moderation and abuse limits.
 import { readFile } from 'node:fs/promises';
+import { files, prepareSamples } from './sample-files';
 
 const base = 'http://localhost:5173';
 const token = process.env.ADMIN_TOKEN ?? 'change-me-dev-admin';
@@ -34,17 +35,17 @@ async function call(who: keyof typeof jars, path: string, init: any = {}) {
 
 async function upload(file: string) {
 	const bytes = await readFile(file);
-	const p = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/jpeg', size: bytes.length }] } });
+	const p = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/png', size: bytes.length }] } });
 	if (p.status !== 200) return { error: p };
 	const { id, url } = p.data.uploads[0];
-	await fetch(base + url, { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: bytes });
+	await fetch(base + url, { method: 'PUT', headers: { 'content-type': 'image/png' }, body: bytes });
 	return { id: id as string };
 }
 const check = (name: string, ok: boolean, extra?: unknown) =>
 	console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : JSON.stringify(extra));
 
-const S = 'samples/';
-let up = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+await prepareSamples();
+let up = await upload(files.single);
 let r = await call('a', '/api/images', {
 	json: { meta: { title: 'Pending one' }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true }
 });
@@ -76,7 +77,7 @@ check('approved shows in feed', r.data.entries.some((e: any) => e.id === id));
 // abuse limits: flag above 2, pause above 4
 let paused = false;
 for (let i = 0; i < 6 && !paused; i++) {
-	up = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+	up = await upload(files.single);
 	if ('error' in up) {
 		paused = up.error.status === 503;
 		break;
@@ -85,7 +86,7 @@ for (let i = 0; i < 6 && !paused; i++) {
 		json: { meta: { title: `Spam ${i}` }, pair: { mode: 'single_file', left: up.id }, confirm: true }
 	});
 }
-r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/jpeg', size: 10 }] } });
+r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/png', size: 10 }] } });
 check('paused after threshold', r.status === 503 && r.data.paused, r);
 r = await call('b', '/api/feed');
 check('browsing works while paused', r.status === 200);
@@ -94,11 +95,11 @@ check('flagged listed', r.data.includes('Flagged') && r.data.includes('submissio
 r = await call('admin', '/admin');
 check('flagged client lists what it submitted', /recent[\s\S]*Spam \d/.test(r.data.split('Moderation queue')[0]), r.data.slice(0, 100));
 r = await call('admin', '/admin?/resume', { form: {} });
-r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/jpeg', size: 10 }] } });
+r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/png', size: 10 }] } });
 check('resumed', r.status === 200, r);
 
 // reject path
-up = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
+up = await upload(files.left);
 r = await call('a', '/api/images', {
 	json: { meta: { title: 'To reject' }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true }
 });
@@ -109,7 +110,7 @@ check('owner sees rejection', r.data.includes('nope') || r.data.includes('reject
 
 
 // admins can open private items; others cannot
-up = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
+up = await upload(files.left);
 r = await call('a', '/api/images', {
 	json: { meta: { title: 'QA admin private', private: true }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true }
 });

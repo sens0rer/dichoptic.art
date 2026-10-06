@@ -1,5 +1,6 @@
 // Fills a running dev server with the sample pairs, through the same endpoints the upload page uses.
 import { readFile } from 'node:fs/promises';
+import { files, prepareSamples } from './sample-files';
 
 const base = process.env.BASE_URL ?? 'http://localhost:5173';
 let cookie = '';
@@ -23,38 +24,35 @@ async function call(path: string, init: RequestInit & { json?: unknown } = {}) {
 async function upload(file: string): Promise<string> {
 	const bytes = await readFile(file);
 	const presign = await call('/api/upload/presign', {
-		json: { files: [{ type: 'image/jpeg', size: bytes.length }] }
+		json: { files: [{ type: 'image/png', size: bytes.length }] }
 	});
 	const { id, url } = presign.data.uploads[0];
 	const res = await fetch(base + url, {
 		method: 'PUT',
-		headers: { 'content-type': 'image/jpeg' },
+		headers: { 'content-type': 'image/png' },
 		body: bytes
 	});
 	if (!res.ok) throw new Error(`upload failed: ${res.status}`);
 	return id;
 }
 
-const dir = 'samples/';
-const sunset = await upload(`${dir}photo_2026-09-17_16-16-29.jpg`);
-const left = await upload(`${dir}photo_2026-10-06_10-36-09.jpg`);
-const right = await upload(`${dir}photo_2026-10-06_10-36-09 (2).jpg`);
+await prepareSamples();
+const single = await upload(files.single);
+const left = await upload(files.left);
+const right = await upload(files.right);
 
 const one = await call('/api/images', {
 	json: {
 		meta: {
-			title: 'Sunset islet',
+			title: 'Mirrored thangka',
 			credit: 'Sample',
 			submittedBy: 'Seed Bot',
 			dimension: '2D',
 			medium: 'photography',
-			alteration: 'digitally_altered',
-			chromacy: 'tetra',
-			chromacyType: 'TRT',
-			filterInfo: 'red / cyan',
-			tags: ['sunset', 'sea']
+			chromacy: 'di',
+			tags: ['thangka', 'painting']
 		},
-		pair: { mode: 'single_file', left: sunset },
+		pair: { mode: 'single_file', left: single },
 		confirm: true
 	}
 });
@@ -63,13 +61,13 @@ console.log('single:', one.status, one.data);
 const two = await call('/api/images', {
 	json: {
 		meta: {
-			title: 'Cottonwoods',
+			title: 'Thangka pair',
 			submittedBy: 'Seed Bot',
 			author: 'Seed Bot',
 			dimension: '2D',
 			medium: 'photography',
 			chromacy: 'di',
-			tags: ['trees', 'infrared']
+			tags: ['thangka', 'two files']
 		},
 		pair: { mode: 'two_files', left, right },
 		confirm: true

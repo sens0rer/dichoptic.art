@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises';
+import { files, prepareSamples } from './sample-files';
 
 const base = 'http://localhost:5173';
 const jars: Record<string, string> = { a: '', b: '' };
@@ -24,28 +25,28 @@ async function call(who: string, path: string, init: any = {}) {
 	return { status: res.status, data };
 }
 
-async function upload(file: string, type = 'image/jpeg') {
+async function upload(file: string, type = 'image/png') {
 	const bytes = await readFile(file);
 	const p = await call('a', '/api/upload/presign', { json: { files: [{ type, size: bytes.length }] } });
 	const { id, url } = p.data.uploads[0];
 	await fetch(base + url, { method: 'PUT', headers: { 'content-type': type }, body: bytes });
 	return id as string;
 }
-const S = 'samples/';
+await prepareSamples();
 const check = (name: string, ok: boolean, extra?: unknown) =>
 	console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : JSON.stringify(extra));
 
-// duplicate of the seeded single sunset file
-let sunset = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
-let r = await call('a', '/api/images', { json: { meta: { title: 'Dup' }, pair: { mode: 'single_file', left: sunset } } });
+// duplicate of the seeded single file
+let single = await upload(files.single);
+let r = await call('a', '/api/images', { json: { meta: { title: 'Dup' }, pair: { mode: 'single_file', left: single } } });
 check('duplicate detected', !!r.data.duplicate, r);
-r = await call('a', '/api/images', { json: { meta: { title: 'Dup' }, pair: { mode: 'single_file', left: sunset }, confirm: true } });
+r = await call('a', '/api/images', { json: { meta: { title: 'Dup' }, pair: { mode: 'single_file', left: single }, confirm: true } });
 check('submit anyway', r.status === 200 && !!r.data.id, r);
 const dupId = r.data.id;
 
-// the two-file trees uploaded as two files duplicates the existing two-file pair
-const l = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
-const rr = await upload(S + 'photo_2026-10-06_10-36-09 (2).jpg');
+// the same two files uploaded as two files duplicates the existing two-file pair
+const l = await upload(files.left);
+const rr = await upload(files.right);
 r = await call('a', '/api/images', { json: { meta: { title: 'Trees again' }, pair: { mode: 'two_files', left: l, right: rr } } });
 check('two-file duplicate detected', !!r.data.duplicate, r);
 
@@ -58,8 +59,8 @@ const big = await call('a', '/api/upload/presign', { json: { files: [{ type: 'im
 check('over 20MB rejected', big.status === 400, big);
 
 // collection
-const c1 = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
-const c2 = await upload(S + 'photo_2026-10-06_10-36-09 (2).jpg');
+const c1 = await upload(files.left);
+const c2 = await upload(files.right);
 r = await call('a', '/api/collections', {
 	json: {
 		collection: { title: 'Trees collection', medium: 'photography', tags: ['Trees', 'summer'], submittedBy: 'Smoke', chromacy: 'tri', chromacyType: 'x' },
@@ -90,7 +91,7 @@ r = await call('b', '/api/feed?tag=summer');
 check('tag filter finds collection', r.data.entries.length === 1 && r.data.entries[0].type === 'collection', r.data.entries.map((e: any) => e.title));
 r = await call('b', '/api/feed?by=seed%20bot');
 check('by filter', r.data.entries.length === 2, r.data.entries.map((e: any) => e.title));
-r = await call('b', '/api/feed?q=sunset&sort=liked');
+r = await call('b', '/api/feed?q=mirrored&sort=liked');
 check('fts + sort', r.data.entries.length === 1, r.data);
 
 // non-owner can't edit/delete
@@ -104,7 +105,7 @@ check('owner edit', r.status === 200, r);
 r = await call('b', '/api/feed?tag=zzz');
 check('edited tag searchable', r.data.entries.length === 1 && r.data.entries[0].title === 'Renamed', r.data);
 // replace files
-const nf = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
+const nf = await upload(files.left);
 r = await call('a', `/api/images/${dupId}`, { method: 'PATCH', json: { meta: { title: 'Renamed' }, pair: { mode: 'single_file', left: nf }, confirm: true } });
 check('replace files', r.status === 200, r);
 
@@ -132,7 +133,7 @@ r = await call('b', `/collection/${colId}`);
 check('collection 404 after last image deleted', r.status === 404, r.status);
 
 // private submissions
-const pf = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+const pf = await upload(files.single);
 r = await call('a', '/api/images', {
 	json: { meta: { title: 'QA private', private: true, tags: ['secrettag'] }, pair: { mode: 'single_file', left: pf }, confirm: true }
 });
@@ -165,8 +166,8 @@ r = await call('b', `/image/${privId}`);
 check('made private again', r.status === 404, r.status);
 
 // private collection hides its pairs
-const q1 = await upload(S + 'photo_2026-10-06_10-36-09.jpg');
-const q2 = await upload(S + 'photo_2026-10-06_10-36-09 (2).jpg');
+const q1 = await upload(files.left);
+const q2 = await upload(files.right);
 r = await call('a', '/api/collections', {
 	json: { collection: { title: 'QA private set', private: true }, items: [{ meta: { title: 'inner' }, pair: { mode: 'two_files', left: q1, right: q2 } }], confirm: true }
 });
@@ -186,10 +187,10 @@ await call('a', `/api/images/${privId}`, { method: 'DELETE' });
 
 // date: defaults to the posting day, can be custom, never changes feed order
 const today = new Date().toISOString().slice(0, 10);
-const d1 = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+const d1 = await upload(files.single);
 r = await call('a', '/api/images', { json: { meta: { title: 'QA dated old', date: '2019-05-01' }, pair: { mode: 'single_file', left: d1 }, confirm: true } });
 const oldId = r.data.id;
-const d2 = await upload(S + 'photo_2026-09-17_16-16-29.jpg');
+const d2 = await upload(files.single);
 r = await call('a', '/api/images', { json: { meta: { title: 'QA dated default', date: '' }, pair: { mode: 'single_file', left: d2 }, confirm: true } });
 const defId = r.data.id;
 r = await call('b', `/image/${oldId}`);
@@ -206,14 +207,14 @@ await call('a', `/api/images/${oldId}`, { method: 'DELETE' });
 await call('a', `/api/images/${defId}`, { method: 'DELETE' });
 
 // same picture in different colours is not a duplicate; the same colours are
-const brown = await upload(S + 'avalokiteshvara-left.png', 'image/png');
+const brown = await upload(files.left);
 r = await call('a', '/api/images', { json: { meta: { title: 'QA brown' }, pair: { mode: 'single_file', left: brown }, confirm: true } });
 const brownId = r.data.id;
-const green = await upload(S + 'avalokiteshvara-right.png', 'image/png');
+const green = await upload(files.right);
 r = await call('a', '/api/images', { json: { meta: { title: 'QA green' }, pair: { mode: 'single_file', left: green } } });
 check('different colours: not a duplicate', r.status === 200 && !r.data.duplicate, r);
 const greenId = r.data.id;
-const brown2 = await upload(S + 'avalokiteshvara-left.png', 'image/png');
+const brown2 = await upload(files.left);
 r = await call('a', '/api/images', { json: { meta: { title: 'QA brown again' }, pair: { mode: 'single_file', left: brown2 } } });
 check('same colours: duplicate', !!r.data.duplicate, r);
 await call('a', `/api/images/${brownId}`, { method: 'DELETE' });
