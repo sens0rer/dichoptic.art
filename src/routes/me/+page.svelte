@@ -57,7 +57,7 @@
 						{#if c.thumbPrefix}<img src={thumbUrl(c.thumbPrefix, 400)} alt="" />{/if}
 						<div class="info">
 							<a href="/collection/{c.id}"><strong>{c.title}</strong></a>
-							<span class="muted small">{c.count} pairs</span>
+							<span class="muted small">{c.count} {c.count === 1 ? 'image' : 'images'}</span>
 							{#if c.private}<span class="badge">private</span>{/if}
 							{#if c.status !== 'approved'}
 								<span class="badge {c.status}">{c.status}</span>
@@ -74,7 +74,7 @@
 		{/if}
 
 		{#if data.images.length}
-			<h2>Pairs</h2>
+			<h2>Images</h2>
 			<ul class="list">
 				{#each data.images as i (i.id)}
 					<li class="panel item">
@@ -90,7 +90,7 @@
 						</div>
 						<div class="row">
 							<a class="btn" href="/image/{i.id}/edit">Edit</a>
-							<button class="danger" onclick={() => remove('images', i.id, 'pair')}>Delete</button>
+							<button class="danger" onclick={() => remove('images', i.id, 'image')}>Delete</button>
 						</div>
 					</li>
 				{/each}

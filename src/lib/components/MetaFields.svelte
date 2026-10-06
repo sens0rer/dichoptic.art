@@ -13,7 +13,7 @@
 		inherit = null,
 		inheritedMedium = null,
 		showTitle = true,
-		subject = 'pair',
+		subject = 'image',
 		showPrivate = false
 	}: {
 		values: Meta;
@@ -24,7 +24,7 @@
 		inherit?: string | null;
 		inheritedMedium?: string | null;
 		showTitle?: boolean;
-		subject?: 'pair' | 'collection';
+		subject?: 'image' | 'collection';
 		showPrivate?: boolean;
 	} = $props();
 

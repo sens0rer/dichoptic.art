@@ -16,7 +16,7 @@
 	const c = $derived(data.collection);
 
 	async function remove() {
-		if (!confirm('Delete this collection and every pair in it?')) return;
+		if (!confirm('Delete this collection and every image in it?')) return;
 		const res = await api(`/api/collections/${c.id}`, { method: 'DELETE' });
 		if (res.ok) await goto('/me', { refreshAll: true });
 	}
@@ -45,7 +45,7 @@
 	{#if data.isPrivate}
 		<p class="panel">
 			<span class="badge">private</span>
-			Only {data.isOwner ? 'you' : 'its owner'} and site admins can see this collection and its pairs.
+			Only {data.isOwner ? 'you' : 'its owner'} and site admins can see this collection and its images.
 		</p>
 	{:else if !data.live}
 		<p class="panel">
@@ -59,7 +59,7 @@
 		{#if data.live}<LikeButton type="collection" id={c.id} count={c.likeCount} liked={data.liked} />{/if}
 		{#if !data.isPrivate}<ShareButtons title={c.title} />{/if}
 		{#if data.isOwner}
-			<a class="btn" href="/upload?collection={c.id}">Add pairs</a>
+			<a class="btn" href="/upload?collection={c.id}">Add images</a>
 			<a class="btn" href="/collection/{c.id}/edit">Edit</a>
 			<button class="danger" onclick={remove}>Delete</button>
 		{/if}
@@ -133,7 +133,7 @@
 		border-color: #555;
 		text-decoration: none;
 	}
-	/* Fixed tile shape so rows line up; whole pair always visible, letterboxed in the card colour. */
+	/* Fixed tile shape so rows line up; whole image always visible, letterboxed in the card colour. */
 	img {
 		display: block;
 		width: 100%;

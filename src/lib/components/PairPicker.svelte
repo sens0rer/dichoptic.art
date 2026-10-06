@@ -224,7 +224,7 @@
 	{/if}
 
 	{#if mode === 'two_files' && sides.every((s) => slots[s]?.url)}
-		<div class="preview" aria-label="Preview of the pair">
+		<div class="preview" aria-label="Preview of the image">
 			<span class="muted small">Preview</span>
 			<div class="pairrow">
 				{#each sides as side (side)}

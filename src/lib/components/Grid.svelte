@@ -48,7 +48,7 @@
 			<a class="btn" href="/">Clear search and filters</a>
 		{:else}
 			<p>Nothing here yet.</p>
-			<a class="btn" href="/upload">Upload the first pair</a>
+			<a class="btn" href="/upload">Upload the first image</a>
 		{/if}
 	</div>
 {:else}
@@ -66,7 +66,7 @@
 					<span class="meta">
 						<span class="title">{e.title ?? 'Untitled'}</span>
 						<span class="muted small">
-							{#if e.type === 'collection'}{e.count} {e.count === 1 ? 'pair' : 'pairs'} ·{/if}
+							{#if e.type === 'collection'}{e.count} {e.count === 1 ? 'image' : 'images'} ·{/if}
 							♥ {e.likeCount}
 						</span>
 					</span>
@@ -106,7 +106,7 @@
 		border-color: #555;
 		text-decoration: none;
 	}
-	/* Fixed tile shape so rows line up; whole pair always visible, letterboxed in the card colour. */
+	/* Fixed tile shape so rows line up; whole image always visible, letterboxed in the card colour. */
 	img {
 		display: block;
 		width: 100%;

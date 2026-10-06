@@ -124,7 +124,7 @@
 	{/if}
 
 	<div class="row" style="margin-bottom: 1em" role="radiogroup" aria-label="What to upload">
-		<button class:active={target === 'image'} onclick={() => pickTarget('image')}>Single pair</button>
+		<button class:active={target === 'image'} onclick={() => pickTarget('image')}>Single image</button>
 		<button class:active={target === 'collection'} onclick={() => pickTarget('collection')}>
 			New collection
 		</button>
@@ -150,7 +150,7 @@
 				<div class="panel">
 					<h2>Collection</h2>
 					<p class="muted small">
-						Settings here are defaults for every pair inside. A pair can override them later by editing it.
+						Settings here are defaults for every image inside. An image can override them later by editing it.
 					</p>
 					<MetaFields bind:values={meta} {errors} presets={data.presets} subject="collection" showPrivate />
 				</div>
@@ -163,11 +163,11 @@
 				</div>
 			{/if}
 
-			<h2>Pairs</h2>
+			<h2>Images</h2>
 			{#each rows as row, i (row.key)}
 				<div class="panel">
 					<div class="row" style="justify-content: space-between">
-						<h3>Pair {i + 1}</h3>
+						<h3>Image {i + 1}</h3>
 						{#if rows.length > 1}
 							<button
 								type="button"
@@ -175,7 +175,7 @@
 								onclick={() => {
 									rows = rows.filter((r) => r !== row);
 									if (cover === row.key) cover = rows[0].key;
-								}}>Remove pair</button
+								}}>Remove image</button
 							>
 						{/if}
 					</div>
@@ -185,7 +185,7 @@
 					</div>
 					<PairPicker bind:pair={row.pair} bind:busy={row.busy} />
 					<button type="button" class="link small" onclick={() => (row.details = !row.details)}>
-						{row.details ? 'Hide details for this pair' : 'Set details for this pair'}
+						{row.details ? 'Hide details for this image' : 'Set details for this image'}
 					</button>
 					{#if row.details}
 						<div class="details">
@@ -208,11 +208,11 @@
 					{/if}
 					{#if duplicates.find((d) => d.index === i)}
 						{@const d = duplicates.find((x) => x.index === i)!}
-						<p class="warn small">Might be a duplicate of <a href="/image/{d.id}" target="_blank">{d.title ?? 'an existing pair'}</a>.</p>
+						<p class="warn small">Might be a duplicate of <a href="/image/{d.id}" target="_blank">{d.title ?? 'an existing image'}</a>.</p>
 					{/if}
 				</div>
 			{/each}
-			<button type="button" onclick={() => (rows = [...rows, newRow()])}>+ Add another pair</button>
+			<button type="button" onclick={() => (rows = [...rows, newRow()])}>+ Add another image</button>
 			<div style="height: 1em"></div>
 		{/if}
 
@@ -220,7 +220,7 @@
 			<div class="panel">
 				<p>
 					This might be a duplicate of:
-					<a href="/image/{duplicate.id}" target="_blank">{duplicate.title ?? 'an existing pair'}</a>
+					<a href="/image/{duplicate.id}" target="_blank">{duplicate.title ?? 'an existing image'}</a>
 				</p>
 				<div class="row">
 					<button type="button" class="primary" onclick={() => submit(true)}>Submit anyway</button>
@@ -230,7 +230,7 @@
 		{/if}
 		{#if duplicates.length}
 			<div class="panel">
-				<p>Some pairs might be duplicates (marked above). Review them, or continue.</p>
+				<p>Some images might be duplicates (marked above). Review them, or continue.</p>
 				<div class="row">
 					<button type="button" class="primary" onclick={() => submit(true)}>Submit anyway</button>
 					<button type="button" onclick={() => (duplicates = [])}>Cancel</button>

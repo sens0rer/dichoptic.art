@@ -19,7 +19,7 @@ const schema = z.object({
 	collection: z.unknown(),
 	items: z
 		.array(z.object({ meta: z.unknown(), pair: pairSchema }))
-		.min(1, 'Add at least one pair')
+		.min(1, 'Add at least one image')
 		.max(100),
 	cover: z.number().int().min(0).optional(),
 	confirm: z.boolean().optional()

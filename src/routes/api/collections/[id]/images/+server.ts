@@ -13,7 +13,7 @@ import { createImage, findDuplicate, preparePair } from '#lib/server/submissions
 const schema = z.object({
 	items: z
 		.array(z.object({ meta: z.unknown(), pair: pairSchema }))
-		.min(1, 'Add at least one pair')
+		.min(1, 'Add at least one image')
 		.max(100),
 	confirm: z.boolean().optional()
 });

@@ -69,7 +69,7 @@
 		{#each data.queue.collections as c (c.id)}
 			<div class="panel">
 				<h3>Collection: <a href="/collection/{c.id}">{c.title}</a></h3>
-				<p class="muted small">{c.images.length} pairs · {c.submittedBy ?? (plainText(c.credit) || 'anonymous')}</p>
+				<p class="muted small">{c.images.length} images · {c.submittedBy ?? (plainText(c.credit) || 'anonymous')}</p>
 				<div class="thumbs">
 					{#each c.images as i (i.id)}<img src={thumbUrl(i.thumbPrefix, 400)} alt={i.title ?? ''} />{/each}
 				</div>
@@ -78,7 +78,7 @@
 		{/each}
 		{#each data.queue.images as i (i.id)}
 			<div class="panel">
-				<h3>Pair: <a href="/image/{i.id}">{i.title ?? 'Untitled'}</a></h3>
+				<h3>Image: <a href="/image/{i.id}">{i.title ?? 'Untitled'}</a></h3>
 				<p class="muted small">{i.submittedBy ?? (plainText(i.credit) || 'anonymous')}{i.collectionId ? ' · added to an approved collection' : ''}</p>
 				<img class="big" src={thumbUrl(i.thumbPrefix, 800)} alt={i.title ?? ''} />
 				{@render review('image', i.id)}
@@ -95,7 +95,7 @@
 				<li><a href="/collection/{c.id}">{c.title}</a> <span class="muted">collection</span></li>
 			{/each}
 			{#each data.private.images as i (i.id)}
-				<li><a href="/image/{i.id}">{i.title ?? 'Untitled'}</a> <span class="muted">pair</span></li>
+				<li><a href="/image/{i.id}">{i.title ?? 'Untitled'}</a> <span class="muted">image</span></li>
 			{/each}
 			{#if !data.private.collections.length && !data.private.images.length}
 				<li class="muted">None.</li>

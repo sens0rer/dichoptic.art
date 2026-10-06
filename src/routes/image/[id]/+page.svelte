@@ -20,7 +20,7 @@
 	);
 
 	async function remove() {
-		if (!confirm('Delete this pair? It disappears from the site.')) return;
+		if (!confirm('Delete this image? It disappears from the site.')) return;
 		const res = await api(`/api/images/${image.id}`, { method: 'DELETE' });
 		if (res.ok) await goto(data.collection ? `/collection/${data.collection.id}` : '/me', { refreshAll: true });
 	}

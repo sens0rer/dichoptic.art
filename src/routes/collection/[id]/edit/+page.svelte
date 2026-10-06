@@ -51,7 +51,7 @@
 				{#each data.images as i (i.id)}
 					<label class="pick" class:on={cover === i.id}>
 						<input type="radio" name="cover" value={i.id} bind:group={cover} class="sr-only" />
-						<img src={thumbUrl(i.thumbPrefix, 400)} alt={i.title ?? 'Pair'} />
+						<img src={thumbUrl(i.thumbPrefix, 400)} alt={i.title ?? 'Image'} />
 					</label>
 				{/each}
 			</div>

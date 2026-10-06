@@ -45,7 +45,7 @@
 
 <main class="narrow">
 	<a href="/image/{data.image.id}">← Back</a>
-	<h1>Edit pair</h1>
+	<h1>Edit image</h1>
 
 	<form
 		onsubmit={(e) => {
@@ -54,7 +54,7 @@
 		}}
 	>
 		<div class="panel">
-			<img class="cur" src={thumbUrl(data.image.thumbPrefix, 800)} alt="Current pair" />
+			<img class="cur" src={thumbUrl(data.image.thumbPrefix, 800)} alt="Current image" />
 			<label class="inline">
 				<input type="checkbox" bind:checked={replace} /> Replace the files
 			</label>
@@ -74,7 +74,7 @@
 		{#if duplicate}
 			<div class="panel">
 				<p>
-					This might be a duplicate of: <a href="/image/{duplicate.id}" target="_blank">{duplicate.title ?? 'an existing pair'}</a>
+					This might be a duplicate of: <a href="/image/{duplicate.id}" target="_blank">{duplicate.title ?? 'an existing image'}</a>
 				</p>
 				<div class="row">
 					<button type="button" class="primary" onclick={() => save(true)}>Save anyway</button>
