@@ -68,4 +68,4 @@ Notes:
 
 ## Credits
 
-The 3D-glasses logo (`src/lib/assets/logo.svg`, `favicon.svg`) is "3D Glasses" by Merlin2525 from [Open Clipart](https://openclipart.org/detail/176790/3d-glasses), released under CC0 (public domain).
+The 3D-glasses logo (`src/lib/assets/favicon.svg`, the browser-tab icon) is "3D Glasses" by Merlin2525 from [Open Clipart](https://openclipart.org/detail/176790/3d-glasses), released under CC0 (public domain).

@@ -3,7 +3,6 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import favicon from '#lib/assets/favicon.svg';
-	import logo from '#lib/assets/logo.svg';
 	import { consent, initConsent, needsPrompt, setConsent } from '#lib/consent.svelte';
 	import type { LayoutProps } from './$types';
 
@@ -26,7 +25,7 @@
 </svelte:head>
 
 <header>
-	<a class="brand" href="/"><img src={logo} alt="" />dichoptic<span>.art</span></a>
+	<a class="brand" href="/">dichoptic<span>.art</span></a>
 	<nav>
 		{#each links as l (l.href)}
 			<a href={l.href} class:current={here(l.href)}>{l.label}</a>
@@ -67,17 +66,10 @@
 		border-bottom: 1px solid var(--border);
 	}
 	.brand {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.5em;
 		font-weight: 700;
 		font-size: 1.15rem;
 		color: var(--text);
 		letter-spacing: 0.01em;
-	}
-	.brand img {
-		height: 1.5em;
-		width: auto;
 	}
 	.brand span {
 		color: var(--muted);
