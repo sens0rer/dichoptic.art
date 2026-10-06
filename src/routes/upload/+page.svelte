@@ -126,7 +126,7 @@
 	<div class="row" style="margin-bottom: 1em" role="radiogroup" aria-label="What to upload">
 		<button class:active={target === 'image'} onclick={() => pickTarget('image')}>Single image</button>
 		<button class:active={target === 'collection'} onclick={() => pickTarget('collection')}>
-			New collection
+			Collection of images
 		</button>
 		{#if data.myCollections.length}
 			<button class:active={target === 'add'} onclick={() => pickTarget('add')}>
