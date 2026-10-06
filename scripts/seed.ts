@@ -44,7 +44,7 @@ const one = await call('/api/images', {
 	json: {
 		meta: {
 			title: 'Sunset islet',
-			creditName: 'Sample',
+			credit: 'Sample',
 			submittedBy: 'Seed Bot',
 			dimension: '2D',
 			medium: 'photography',

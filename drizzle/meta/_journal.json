@@ -29,6 +29,20 @@
       "when": 1791290575286,
       "tag": "0003_storage_quota",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791292352359,
+      "tag": "0004_credit_add",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791292354871,
+      "tag": "0005_credit_drop",
+      "breakpoints": true
     }
   ]
 }

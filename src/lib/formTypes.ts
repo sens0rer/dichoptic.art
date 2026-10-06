@@ -1,8 +1,7 @@
 export interface Meta {
 	title: string;
 	description: string;
-	creditName: string;
-	creditUrl: string;
+	credit: string;
 	submittedBy: string;
 	author: string;
 	dimension: string;
@@ -18,8 +17,7 @@ export interface Meta {
 export const emptyMeta = (): Meta => ({
 	title: '',
 	description: '',
-	creditName: '',
-	creditUrl: '',
+	credit: '',
 	submittedBy: '',
 	author: '',
 	dimension: '',

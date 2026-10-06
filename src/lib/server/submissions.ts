@@ -1,4 +1,5 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
+import { creditText } from '../credit';
 import { config } from './config';
 import {
 	collections,
@@ -88,10 +89,10 @@ const searchText = (parts: (string | null)[], tagNames: string[]) =>
 	[...parts, ...tagNames].filter(Boolean).join(' ');
 
 const imageSearch = (m: ImageMeta) =>
-	searchText([m.title, m.description, m.creditName, m.submittedBy, m.author], m.tags);
+	searchText([m.title, m.description, creditText(m.credit), m.submittedBy, m.author], m.tags);
 
 const collectionSearch = (m: CollectionMeta) =>
-	searchText([m.title, m.description, m.creditName, m.submittedBy, m.author], m.tags);
+	searchText([m.title, m.description, creditText(m.credit), m.submittedBy, m.author], m.tags);
 
 async function effectiveMedium(tx: Reader, collectionId: string | null, own: string | null) {
 	if (own || !collectionId) return own;
@@ -130,8 +131,7 @@ export async function createImage(
 		id,
 		title: meta.title,
 		description: meta.description,
-		creditName: meta.creditName,
-		creditUrl: meta.creditUrl,
+		credit: meta.credit,
 		submittedBy: meta.submittedBy,
 		author: meta.author,
 		dimension: meta.dimension,
@@ -187,8 +187,7 @@ export async function updateImage(
 		.set({
 			title: meta.title,
 			description: meta.description,
-			creditName: meta.creditName,
-			creditUrl: meta.creditUrl,
+			credit: meta.credit,
 			submittedBy: meta.submittedBy,
 			author: meta.author,
 			dimension: meta.dimension,
@@ -217,8 +216,7 @@ export async function createCollection(
 		id,
 		title: meta.title,
 		description: meta.description,
-		creditName: meta.creditName,
-		creditUrl: meta.creditUrl,
+		credit: meta.credit,
 		submittedBy: meta.submittedBy,
 		author: meta.author,
 		dimension: meta.dimension,
@@ -251,8 +249,7 @@ export async function updateCollection(
 		.set({
 			title: meta.title,
 			description: meta.description,
-			creditName: meta.creditName,
-			creditUrl: meta.creditUrl,
+			credit: meta.credit,
 			submittedBy: meta.submittedBy,
 			author: meta.author,
 			dimension: meta.dimension,

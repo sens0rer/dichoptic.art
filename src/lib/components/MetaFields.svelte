@@ -90,14 +90,13 @@
 <fieldset>
 	<legend>Credit</legend>
 	<div class="grid2">
-		<div class="field">
+		<div class="field" style="grid-column: 1 / -1">
 			<label for="m-credit">Credit</label>
-			<input id="m-credit" bind:value={values.creditName} maxlength="200" />
-		</div>
-		<div class="field">
-			<label for="m-credit-url">Credit link</label>
-			<input id="m-credit-url" inputmode="url" placeholder="example.com" bind:value={values.creditUrl} />
-			{#if errors.creditUrl}<span class="error">{errors.creditUrl}</span>{/if}
+			<input id="m-credit" bind:value={values.credit} maxlength="500" />
+			<span class="muted small">
+				Credit anyone. To link words, write [word](address), e.g. Photo by [Jane](janedoe.com).
+			</span>
+			{#if errors.credit}<span class="error">{errors.credit}</span>{/if}
 		</div>
 		<div class="field">
 			<label for="m-by">Submitted by</label>

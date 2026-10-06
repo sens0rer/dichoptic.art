@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { creditText, parseCredit } from '../src/lib/credit';
 import { collectionMetaSchema, imageMetaSchema } from '../src/lib/server/meta';
 
 describe('image metadata', () => {
@@ -22,15 +23,23 @@ describe('image metadata', () => {
 		expect(m.chromacyType).toBeNull();
 	});
 
-	it('accepts a bare domain as a credit link', () => {
-		expect(imageMetaSchema(true).parse({ title: 'x', creditUrl: 'wikipedia.com' }).creditUrl).toBe(
-			'https://wikipedia.com'
-		);
+	it('links words in credit and adds https:// to bare addresses', () => {
+		const m = imageMetaSchema(true).parse({ title: 'x', credit: 'Photo by [Jane](janedoe.com) and Bob' });
+		expect(m.credit).toBe('Photo by [Jane](https://janedoe.com) and Bob');
+		expect(parseCredit(m.credit!)).toEqual([
+			{ text: 'Photo by ' },
+			{ text: 'Jane', href: 'https://janedoe.com' },
+			{ text: ' and Bob' }
+		]);
 	});
 
-	it('only accepts http(s) credit links', () => {
-		expect(imageMetaSchema(true).safeParse({ title: 'x', creditUrl: 'javascript:alert(1)' }).success).toBe(false);
-		expect(imageMetaSchema(true).safeParse({ title: 'x', creditUrl: 'https://example.com/a' }).success).toBe(true);
+	it('rejects credit links that are not web addresses', () => {
+		expect(imageMetaSchema(true).safeParse({ title: 'x', credit: '[x](javascript:alert(1))' }).success).toBe(false);
+		expect(imageMetaSchema(true).safeParse({ title: 'x', credit: '[x](hello)' }).success).toBe(false);
+	});
+
+	it('shows credit without link syntax in search text', () => {
+		expect(creditText('Photo by [Jane](https://janedoe.com)')).toBe('Photo by Jane');
 	});
 
 	it('rejects unknown vocabulary values', () => {

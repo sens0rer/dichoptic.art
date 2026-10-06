@@ -1,25 +1,27 @@
 <script lang="ts">
+	import { parseCredit } from '#lib/credit';
+
 	let {
-		creditName,
-		creditUrl,
+		credit,
 		submittedBy,
 		author
 	}: {
-		creditName: string | null;
-		creditUrl: string | null;
+		credit: string | null;
 		submittedBy: string | null;
 		author: string | null;
 	} = $props();
 </script>
 
-{#if creditName || creditUrl || submittedBy || author}
+{#if credit || submittedBy || author}
 	<dl class="credits">
-		{#if creditName || creditUrl}
+		{#if credit}
 			<dt>Credit</dt>
 			<dd>
-				{#if creditUrl}<a href={creditUrl} rel="noopener noreferrer nofollow" target="_blank"
-						>{creditName ?? creditUrl.replace(/^https?:\/\//, '')}</a
-					>{:else}{creditName}{/if}
+				{#each parseCredit(credit) as part, i (i)}{#if part.href}<a
+							href={part.href}
+							rel="noopener noreferrer nofollow"
+							target="_blank">{part.text}</a
+						>{:else}{part.text}{/if}{/each}
 			</dd>
 		{/if}
 		{#if author}

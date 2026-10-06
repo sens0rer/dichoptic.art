@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { normalizeCredit } from '../credit';
 import { ALTERATIONS, CHROMACIES, DIMENSIONS, MEDIUMS } from '../vocab';
 
 const text = (max: number) =>
@@ -18,15 +19,20 @@ const choice = <T extends readonly [string, ...string[]]>(values: T) =>
 export const normTag = (t: string) => t.trim().toLowerCase().replace(/\s+/g, ' ').slice(0, 40);
 
 const credit = {
-	creditName: text(200),
-	creditUrl: z
+	credit: z
 		.string()
 		.trim()
 		.max(500)
 		.nullish()
-		// A bare "wikipedia.com" is accepted and stored as https://wikipedia.com.
-		.transform((v) => (v ? (/^[a-z][a-z0-9+.-]*:/i.test(v) ? v : `https://${v}`) : null))
-		.refine((v) => v === null || /^https?:\/\/[^\s/]+\.\S+$/i.test(v), 'Enter a valid web address'),
+		.transform((v, ctx) => {
+			if (!v) return null;
+			const r = normalizeCredit(v);
+			if ('error' in r) {
+				ctx.addIssue({ code: 'custom', message: r.error });
+				return z.NEVER;
+			}
+			return r.value;
+		}),
 	submittedBy: text(100),
 	author: text(100)
 };

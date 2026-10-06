@@ -49,8 +49,8 @@ const classification = () => ({
 });
 
 const credit = () => ({
-	creditName: text('credit_name'),
-	creditUrl: text('credit_url'),
+	// Free text; words can be linked as [word](address). See lib/credit.ts.
+	credit: text('credit'),
 	submittedBy: text('submitted_by'),
 	author: text('author')
 });

@@ -8,13 +8,14 @@
 	import PairViewer from '#lib/components/PairViewer.svelte';
 	import RecoveryNotice from '#lib/components/RecoveryNotice.svelte';
 	import ShareButtons from '#lib/components/ShareButtons.svelte';
+	import { creditText } from '#lib/credit';
 	import { api } from '#lib/consent.svelte';
 
 	let { data } = $props();
 	const image = $derived(data.image);
 
 	const fallbackDescription = $derived(
-		image.description ?? ([image.creditName, image.submittedBy].filter(Boolean).join(' · ') || null)
+		image.description ?? ([creditText(image.credit), image.submittedBy].filter(Boolean).join(' · ') || null)
 	);
 
 	async function remove() {
@@ -84,8 +85,7 @@
 		<div>
 			{#if image.description}<p class="desc">{image.description}</p>{/if}
 			<Credits
-				creditName={image.creditName}
-				creditUrl={image.creditUrl}
+				credit={image.credit}
 				submittedBy={image.submittedBy}
 				author={image.author}
 			/>

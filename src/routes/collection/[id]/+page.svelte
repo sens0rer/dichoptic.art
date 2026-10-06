@@ -7,6 +7,7 @@
 	import OgTags from '#lib/components/OgTags.svelte';
 	import RecoveryNotice from '#lib/components/RecoveryNotice.svelte';
 	import ShareButtons from '#lib/components/ShareButtons.svelte';
+	import { creditText } from '#lib/credit';
 	import { api } from '#lib/consent.svelte';
 	import { thumbSrcset, thumbUrl } from '#lib/urls';
 
@@ -25,7 +26,7 @@
 		publicUrl={data.publicUrl}
 		path="/collection/{c.id}"
 		title={c.title}
-		description={c.description ?? ([c.creditName, c.submittedBy].filter(Boolean).join(' · ') || null)}
+		description={c.description ?? ([creditText(c.credit), c.submittedBy].filter(Boolean).join(' · ') || null)}
 		thumbPrefix={data.cover.thumbPrefix}
 	/>
 {/if}
@@ -64,7 +65,7 @@
 	</div>
 
 	{#if c.description}<p class="desc">{c.description}</p>{/if}
-	<Credits creditName={c.creditName} creditUrl={c.creditUrl} submittedBy={c.submittedBy} author={c.author} />
+	<Credits credit={c.credit} submittedBy={c.submittedBy} author={c.author} />
 	<Meta fields={c} />
 	{#if data.tags.length}
 		<ul class="chips tags">
