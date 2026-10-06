@@ -15,6 +15,7 @@ export interface StoredPair {
 	thumbPrefix: string;
 	thumbW: number;
 	thumbH: number;
+	bytes: number;
 }
 
 // Writes thumbnails and consumes the tmp originals under img/<imageId>/<fresh>-*. A fresh name per
@@ -28,6 +29,7 @@ export async function storePair(
 	const base = `img/${imageId}/${fresh}`;
 	let thumbW = 0;
 	let thumbH = 0;
+	let bytes = p.left.buf.length + (p.right?.buf.length ?? 0);
 	for (const w of THUMB_WIDTHS) {
 		const { data, info } = await upright(p.pair)
 			.flatten({ background: '#000' })
@@ -36,10 +38,11 @@ export async function storePair(
 			.webp({ quality: 82 })
 			.toBuffer({ resolveWithObject: true });
 		await storage.put(`${base}-${w}.webp`, data, 'image/webp');
+		bytes += data.length;
 		thumbW = info.width;
 		thumbH = info.height;
 	}
-	const common = { thumbPrefix: base, thumbW, thumbH, leftW: p.left.width, leftH: p.left.height };
+	const common = { thumbPrefix: base, thumbW, thumbH, bytes, leftW: p.left.width, leftH: p.left.height };
 	if (p.mode === 'single_file') {
 		const fileKey = `${base}-file.${EXT[p.left.format]}`;
 		await storage.move(tmpKeys.left, fileKey);

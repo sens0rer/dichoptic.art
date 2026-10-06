@@ -32,6 +32,11 @@
 			</div>
 		{/if}
 
+		<p class="muted small">
+			Storage: {(data.storage.used / 1048576).toFixed(0)} MB of {(data.storage.limit / 1048576).toFixed(0)} MB
+			({((data.storage.used / data.storage.limit) * 100).toFixed(0)}%). Uploads close at the limit.
+		</p>
+
 		<h2>Flagged</h2>
 		{#each data.flagged as f (f.ip)}
 			<div class="panel">

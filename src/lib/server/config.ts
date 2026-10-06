@@ -25,6 +25,15 @@ export const config = {
 	get sitePauseThreshold() {
 		return env.SITE_PAUSE_THRESHOLD;
 	},
+	get storageLimitBytes() {
+		return env.STORAGE_LIMIT_MB * 1024 * 1024;
+	},
+	get uploadBytesPerIpDay() {
+		return env.UPLOAD_MB_PER_IP_DAY * 1024 * 1024;
+	},
+	get uploadBytesSiteDay() {
+		return env.UPLOAD_MB_SITE_DAY * 1024 * 1024;
+	},
 	get storage() {
 		return env.STORAGE;
 	},

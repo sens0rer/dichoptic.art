@@ -118,6 +118,8 @@ export const images = pgTable(
 		thumbPrefix: text('thumb_prefix').notNull(),
 		thumbW: integer('thumb_w').notNull(),
 		thumbH: integer('thumb_h').notNull(),
+		// Bytes stored for this pair (originals + thumbnails), for the storage cap.
+		bytes: integer('bytes').notNull().default(0),
 		phash: bit64('phash').notNull(),
 		collectionId: text('collection_id').references(() => collections.id),
 		ownerId: text('owner_id')
@@ -199,3 +201,15 @@ export const siteState = pgTable('site_state', {
 	key: text('key').primaryKey(),
 	value: jsonb('value').notNull()
 });
+
+// Bytes each client has asked to upload, to cap what unsubmitted tmp/ files can add up to.
+export const uploadLog = pgTable(
+	'upload_log',
+	{
+		id: bigserial('id', { mode: 'number' }).primaryKey(),
+		clientIp: text('client_ip').notNull(),
+		bytes: integer('bytes').notNull(),
+		...timestamps()
+	},
+	(t) => [index().on(t.clientIp, t.createdAt)]
+);

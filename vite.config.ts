@@ -11,8 +11,8 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			// Pair processing (sharp) can take a while on large uploads.
-			adapter: adapter({ maxDuration: 60 })
+			// Pair processing (sharp) can take a while on large uploads; fra1 sits next to the Neon database.
+			adapter: adapter({ maxDuration: 60, regions: ['fra1'] })
 		})
 	]
 });

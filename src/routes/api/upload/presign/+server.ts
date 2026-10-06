@@ -1,7 +1,8 @@
 import { json } from '@sveltejs/kit';
 import { z } from 'zod';
 import { assertNotPaused } from '#lib/server/abuse';
-import { body, fail, guard } from '#lib/server/api';
+import { body, clientIp, fail, guard } from '#lib/server/api';
+import { reserveUpload } from '#lib/server/quota';
 import { newFileId } from '#lib/server/ids';
 import { storage } from '#lib/server/storage';
 import { ACCEPTED_TYPES, MAX_FILE_BYTES } from '#lib/vocab';
@@ -23,6 +24,10 @@ export const POST = (event) =>
 		await assertNotPaused();
 		const parsed = schema.safeParse(await body(event));
 		if (!parsed.success) return fail(400, parsed.error.issues[0].message);
+		await reserveUpload(
+			clientIp(event),
+			parsed.data.files.map((f) => f.size)
+		);
 		const uploads = await Promise.all(
 			parsed.data.files.map(async (f) => {
 				const id = newFileId();

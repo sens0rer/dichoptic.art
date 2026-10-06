@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { PausedError } from './abuse';
 import { fieldErrors } from './meta';
 import { UploadError } from './process';
+import { QuotaError } from './quota';
 
 export const fail = (status: number, error: string, extra: object = {}) =>
 	json({ error, ...extra }, { status });
@@ -30,6 +31,7 @@ export async function guard(run: () => Promise<Response>): Promise<Response> {
 	} catch (e) {
 		if (e instanceof PausedError) return fail(503, e.message, { paused: true });
 		if (e instanceof UploadError) return fail(400, e.message);
+		if (e instanceof QuotaError) return fail(429, e.message, { quota: true });
 		throw e;
 	}
 }

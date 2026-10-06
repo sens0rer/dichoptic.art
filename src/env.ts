@@ -30,6 +30,10 @@ export const variables = defineEnvVars({
 	PAUSE_THRESHOLD: { schema: integer('PAUSE_THRESHOLD', 100) },
 	SITE_PAUSE_THRESHOLD: { schema: integer('SITE_PAUSE_THRESHOLD', 300) },
 	UPLOAD_DIR: { schema: optional('data/uploads') },
+	// Caps that keep storage inside Cloudflare R2's free tier (10 GB). Sizes in MB.
+	STORAGE_LIMIT_MB: { schema: integer('STORAGE_LIMIT_MB', 6000) },
+	UPLOAD_MB_PER_IP_DAY: { schema: integer('UPLOAD_MB_PER_IP_DAY', 300) },
+	UPLOAD_MB_SITE_DAY: { schema: integer('UPLOAD_MB_SITE_DAY', 1500) },
 	// 'r2' stores files in Cloudflare R2; the R2_* variables below are then required.
 	STORAGE: {
 		schema: (value) => {
