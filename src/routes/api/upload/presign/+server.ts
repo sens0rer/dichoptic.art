@@ -30,7 +30,7 @@ export const POST = (event) =>
 					id,
 					...(await storage.presignUpload(`tmp/${id}`, {
 						contentType: f.type,
-						maxBytes: MAX_FILE_BYTES
+						size: f.size
 					}))
 				};
 			})

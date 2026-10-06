@@ -36,7 +36,7 @@ export function verifyUploadToken(token: string): UploadGrant | null {
 }
 
 export const localStorageImpl: Storage = {
-	async presignUpload(key, { contentType, maxBytes }): Promise<PresignedUpload> {
+	async presignUpload(key, { contentType, size: maxBytes }): Promise<PresignedUpload> {
 		const payload = Buffer.from(
 			JSON.stringify({ key, contentType, maxBytes, exp: Date.now() + 60 * 60 * 1000 })
 		).toString('base64url');
@@ -61,9 +61,6 @@ export const localStorageImpl: Storage = {
 	},
 	async delete(key) {
 		await rm(pathFor(key), { force: true });
-	},
-	url(key) {
-		return `/files/${key}`;
 	}
 };
 

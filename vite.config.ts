@@ -11,7 +11,8 @@ export default defineConfig({
 					filename.split(/[/\\]/).includes('node_modules') ? undefined : true
 			},
 
-			adapter: adapter()
+			// Pair processing (sharp) can take a while on large uploads.
+			adapter: adapter({ maxDuration: 60 })
 		})
 	]
 });

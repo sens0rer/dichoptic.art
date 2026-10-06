@@ -9,11 +9,11 @@ export interface PresignedUpload {
 export interface Storage {
 	presignUpload(
 		key: string,
-		opts: { contentType: string; maxBytes: number }
+		// `size` is the exact byte length the browser declared; the signed URL accepts only that.
+		opts: { contentType: string; size: number }
 	): Promise<PresignedUpload>;
 	put(key: string, data: Buffer, contentType: string): Promise<void>;
 	get(key: string): Promise<Buffer>;
 	move(from: string, to: string): Promise<void>;
 	delete(key: string): Promise<void>;
-	url(key: string): string;
 }

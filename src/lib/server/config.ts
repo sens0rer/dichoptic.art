@@ -25,6 +25,19 @@ export const config = {
 	get sitePauseThreshold() {
 		return env.SITE_PAUSE_THRESHOLD;
 	},
+	get storage() {
+		return env.STORAGE;
+	},
+	get r2() {
+		if (!env.R2_ACCOUNT_ID || !env.R2_ACCESS_KEY_ID || !env.R2_SECRET_ACCESS_KEY || !env.R2_BUCKET)
+			throw new Error('STORAGE=r2 needs R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET');
+		return {
+			accountId: env.R2_ACCOUNT_ID,
+			accessKeyId: env.R2_ACCESS_KEY_ID,
+			secretAccessKey: env.R2_SECRET_ACCESS_KEY,
+			bucket: env.R2_BUCKET
+		};
+	},
 	get uploadDir() {
 		return env.UPLOAD_DIR;
 	}
