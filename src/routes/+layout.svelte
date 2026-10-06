@@ -40,8 +40,6 @@
 	</nav>
 </header>
 
-{@render children()}
-
 {#if needsPrompt()}
 	<div class="consent" role="dialog" aria-label="Cookie notice" bind:clientHeight={bannerHeight}>
 		{#if consent.choice === 'denied'}
@@ -61,6 +59,10 @@
 		</div>
 	</div>
 {/if}
+
+{@render children()}
+
+
 
 <style>
 	header {
@@ -111,17 +113,18 @@
 	.consent p {
 		margin: 0 0 0.8em;
 	}
-	/* Phones: a compact bar on the bottom edge, buttons side by side, smaller text. */
+	/* Phones: part of the page, right under the header, so nothing can cover it or be covered by it
+	   (fullscreen viewer, pinch-zoom, browser toolbars). */
 	@media (max-width: 600px) {
 		.consent {
-			left: 0;
-			right: 0;
-			bottom: 0;
+			position: static;
 			transform: none;
 			width: auto;
-			border-radius: var(--radius) var(--radius) 0 0;
-			border-width: 1px 0 0;
-			padding: 0.8em 1em calc(0.8em + env(safe-area-inset-bottom));
+			z-index: auto;
+			border-width: 0 0 1px;
+			border-radius: 0;
+			box-shadow: none;
+			padding: 0.8em 1em;
 		}
 		.consent p {
 			font-size: 0.85rem;
