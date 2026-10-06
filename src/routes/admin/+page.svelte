@@ -1,0 +1,104 @@
+<script lang="ts">
+	import { enhance } from '$app/forms';
+	import { thumbUrl } from '#lib/urls';
+
+	let { data, form } = $props();
+</script>
+
+<svelte:head><title>Admin · dichoptic.art</title></svelte:head>
+
+<main class="narrow">
+	<h1>Admin</h1>
+
+	{#if !data.admin}
+		<form method="post" action="?/login" use:enhance class="panel">
+			<div class="field">
+				<label for="token">Admin token</label>
+				<input id="token" name="token" type="password" autocomplete="off" required />
+			</div>
+			{#if form?.error}<p class="error">{form.error}</p>{/if}
+			<button class="primary">Sign in</button>
+		</form>
+	{:else}
+		<form method="post" action="?/logout" use:enhance><button class="link small">Sign out</button></form>
+
+		{#if data.paused}
+			<div class="panel">
+				<strong>Submissions are paused</strong>
+				<span class="muted small"> since {new Date(data.paused.since).toLocaleString()} ({data.paused.reason})</span>
+				<form method="post" action="?/resume" use:enhance style="margin-top: 0.6em">
+					<button class="primary">Resume submissions</button>
+				</form>
+			</div>
+		{/if}
+
+		<h2>Flagged</h2>
+		{#each data.flagged as f (f.ip)}
+			<div class="panel row" style="justify-content: space-between">
+				<span><code>{f.ip}</code> <span class="muted small">{f.last24h} submissions in 24 h</span></span>
+				<form method="post" action="?/clearFlag" use:enhance>
+					<input type="hidden" name="ip" value={f.ip} />
+					<button>Dismiss</button>
+				</form>
+			</div>
+		{:else}
+			<p class="muted">No flagged clients.</p>
+		{/each}
+
+		<h2>Moderation queue</h2>
+		{#if !data.moderation}
+			<p class="muted small">Moderation is off; new submissions are approved at once. Anything still pending from earlier is listed.</p>
+		{/if}
+
+		{#each data.queue.collections as c (c.id)}
+			<div class="panel">
+				<h3>Collection: <a href="/collection/{c.id}">{c.title}</a></h3>
+				<p class="muted small">{c.images.length} pairs · {c.submittedBy ?? c.creditName ?? 'anonymous'}</p>
+				<div class="thumbs">
+					{#each c.images as i (i.id)}<img src={thumbUrl(i.thumbPrefix, 400)} alt={i.title ?? ''} />{/each}
+				</div>
+				{@render review('collection', c.id)}
+			</div>
+		{/each}
+		{#each data.queue.images as i (i.id)}
+			<div class="panel">
+				<h3>Pair: <a href="/image/{i.id}">{i.title ?? 'Untitled'}</a></h3>
+				<p class="muted small">{i.submittedBy ?? i.creditName ?? 'anonymous'}{i.collectionId ? ' · added to an approved collection' : ''}</p>
+				<img class="big" src={thumbUrl(i.thumbPrefix, 800)} alt={i.title ?? ''} />
+				{@render review('image', i.id)}
+			</div>
+		{/each}
+		{#if !data.queue.collections.length && !data.queue.images.length}
+			<p class="muted">Nothing waiting for review.</p>
+		{/if}
+	{/if}
+</main>
+
+{#snippet review(type: string, id: string)}
+	<form method="post" use:enhance class="row">
+		<input type="hidden" name="type" value={type} />
+		<input type="hidden" name="id" value={id} />
+		<input name="reason" placeholder="Reason (if rejecting)" style="flex: 1; min-width: 12em" />
+		<button class="primary" formaction="?/approve">Approve</button>
+		<button class="danger" formaction="?/reject">Reject</button>
+	</form>
+{/snippet}
+
+<style>
+	.thumbs {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+		gap: 0.4em;
+		margin-bottom: 0.8em;
+	}
+	.thumbs img,
+	.big {
+		width: 100%;
+		display: block;
+		background: #000;
+		border-radius: 4px;
+	}
+	.big {
+		margin-bottom: 0.8em;
+	}
+</style>
