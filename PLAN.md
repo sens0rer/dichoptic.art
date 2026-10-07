@@ -106,7 +106,7 @@ Four **fixed categories** (dimension, medium, alteration, chromacy) are real col
 - `/admin` lists private submissions so admins can open them; opening one needs the admin cookie, which now applies site-wide.
 
 ## Moderation (optional, off by default)
-- Env flag `MODERATION=on|off`, default **off**. When off, every submission is approved immediately and nothing below is visible.
+- Env flag `MODERATION=on|off`, default **off**, is the starting state; `/admin` has a switch that turns it on or off at any time (stored in the database, overriding the env value from then on). When off, every submission is approved immediately and nothing below is visible.
 - When on, new images and collections get `status = pending` and are hidden from everyone but their owner until approved.
 - `status`: `pending` \| `approved` \| `rejected` on images and collections (default `approved`, so flipping the flag never touches existing content). Every public query filters `deleted_at IS NULL AND status = 'approved'`, next to the soft-delete filter.
 - **Admin**: `/admin` lists the pending queue (pair preview, metadata, credit) with Approve / Reject (optional reason). Guarded by an `ADMIN_TOKEN` env secret entered once and kept in a cookie; the app refuses to start with `MODERATION=on` and no token. This is operator access only, not a user account.
@@ -119,7 +119,7 @@ Four **fixed categories** (dimension, medium, alteration, chromacy) are real col
 ## Abuse limits
 Open uploads need a brake. Two thresholds, counted over a rolling 24 h window (every new image or collection is one submission):
 - **Flag**: when a client crosses the lower threshold, it is marked **flagged**. Submissions still go through; the client and its recent submissions are listed under "Flagged" in `/admin` for you to review.
-- **Pause**: when a client or the whole site crosses the higher threshold, **submissions go offline for everyone**, even when only one client crossed the threshold. Upload and create endpoints return a "submissions are paused" message; browsing, search and likes keep working. They stay paused until you review and click **Resume** in `/admin`; there is no auto-resume.
+- **Pause**: an admin can also pause or resume submissions by hand with a button in `/admin`. When a client or the whole site crosses the higher threshold, **submissions go offline for everyone**, even when only one client crossed the threshold. Upload and create endpoints return a "submissions are paused" message; browsing, search and likes keep working. They stay paused until you review and click **Resume** in `/admin`; there is no auto-resume.
 - Counted per IP address, plus site-wide. On Vercel the real client IP is read from the forwarded header (`x-forwarded-for`), taking only the value Vercel sets.
 - Works independently of the `MODERATION` flag, but needs `ADMIN_TOKEN` (so `/admin` is always available once abuse limits are on).
 - Thresholds are env values. Defaults: flag a client above **30 submissions in 24 h**; pause above **100 in 24 h** from one client or **300 site-wide in 24 h**.

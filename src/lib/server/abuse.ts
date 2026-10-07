@@ -102,6 +102,13 @@ export async function flaggedClients() {
 export const clearFlag = (ip: string) =>
 	db.delete(siteState).where(eq(siteState.key, `flagged:${ip}`));
 
+export async function pause(reason: string) {
+	await db
+		.insert(siteState)
+		.values({ key: 'paused', value: { since: new Date().toISOString(), reason } })
+		.onConflictDoNothing();
+}
+
 // Resuming also restarts the counting window, otherwise the next submission would pause again.
 export async function resume() {
 	await db.delete(siteState).where(eq(siteState.key, 'paused'));

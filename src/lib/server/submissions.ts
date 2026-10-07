@@ -1,6 +1,6 @@
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm';
 import { plainText } from '../links';
-import { config } from './config';
+import { moderationOn } from './settings';
 import {
 	collections,
 	collectionTags,
@@ -118,8 +118,8 @@ async function effectiveMedium(tx: Reader, collectionId: string | null, own: str
 // Private items are never reviewed; they are queued only when made public.
 const today = () => new Date().toISOString().slice(0, 10);
 
-const initialStatus = (isPrivate: boolean) =>
-	config.moderation && !isPrivate ? ('pending' as const) : ('approved' as const);
+const initialStatus = async (isPrivate: boolean) =>
+	(await moderationOn()) && !isPrivate ? ('pending' as const) : ('approved' as const);
 
 export async function createImage(
 	tx: Tx,
@@ -163,18 +163,18 @@ export async function createImage(
 		ownerId: args.ownerId,
 		searchText: imageSearch(meta),
 		private: isPrivate,
-		status: initialStatus(isPrivate)
+		status: await initialStatus(isPrivate)
 	});
 	await setImageTags(tx, id, meta.tags);
 	return id;
 }
 
 // Making something public puts it in the review queue when moderation is on.
-function privacyChange(current: { private: boolean }, next: boolean) {
+async function privacyChange(current: { private: boolean }, next: boolean) {
 	if (current.private === next) return {};
 	return {
 		private: next,
-		...(!next && config.moderation ? { status: 'pending' as const } : {})
+		...(!next && (await moderationOn()) ? { status: 'pending' as const } : {})
 	};
 }
 
@@ -215,7 +215,7 @@ export async function updateImage(
 			date: meta.date ?? (image.collectionId ? null : image.createdAt.toISOString().slice(0, 10)),
 			searchText: imageSearch(meta),
 			// Pairs inside a collection follow the collection's privacy.
-			...(image.collectionId ? {} : privacyChange(image, meta.private)),
+			...(image.collectionId ? {} : await privacyChange(image, meta.private)),
 			...files
 		})
 		.where(eq(images.id, image.id));
@@ -246,7 +246,7 @@ export async function createCollection(
 		ownerId: args.ownerId,
 		searchText: collectionSearch(meta),
 		private: meta.private,
-		status: initialStatus(meta.private)
+		status: await initialStatus(meta.private)
 	});
 	await setCollectionTags(tx, id, meta.tags);
 	return id;
@@ -259,7 +259,7 @@ export async function updateCollection(
 	coverImageId: string | null
 ) {
 	const id = current.id;
-	const change = privacyChange(current, meta.private);
+	const change = await privacyChange(current, meta.private);
 	if ('private' in change)
 		await tx.update(images).set({ private: meta.private }).where(eq(images.collectionId, id));
 	await tx

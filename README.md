@@ -25,7 +25,7 @@ Uploaded files live under `data/uploads/` (local `Storage` implementation; origi
 | `SECRET` | – | required; signs local upload URLs and the admin cookie |
 | `ADMIN_TOKEN` | – | required; sign-in for `/admin` |
 | `PUBLIC_URL` | `http://localhost:5173` | absolute base for link-preview tags |
-| `MODERATION` | `off` | `on` queues new submissions for approval in `/admin` |
+| `MODERATION` | `off` | starting state of moderation; `/admin` has a switch that overrides it from then on |
 | `FLAG_THRESHOLD` / `PAUSE_THRESHOLD` / `SITE_PAUSE_THRESHOLD` | 30 / 100 / 300 | submissions per rolling 24 h: flag a client / pause everyone because of one client / pause everyone site-wide |
 | `UPLOAD_DIR` | `data/uploads` | local storage root |
 | `STORAGE`, `R2_*`, `FILES_BASE` | `local` | see Deploy |

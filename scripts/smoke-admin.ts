@@ -45,8 +45,12 @@ const check = (name: string, ok: boolean, extra?: unknown) =>
 	console.log(ok ? 'PASS' : 'FAIL', name, ok ? '' : JSON.stringify(extra));
 
 await prepareSamples();
+// Moderation is a switch in /admin (the env value is only its starting point), so set it explicitly.
+await call('admin', '/admin?/login', { form: { token } });
+await call('admin', '/admin?/moderation', { form: { on: 'true' } });
+
 let up = await upload(files.single);
-let r = await call('a', '/api/images', {
+let r: any = await call('a', '/api/images', {
 	json: { meta: { title: 'Pending one' }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true }
 });
 check('submit while moderated', r.status === 200, r);
@@ -121,3 +125,30 @@ r = await call('admin', `/image/${privId}`);
 check('private visible to admin', r.status === 200, r.status);
 r = await call('admin', '/admin');
 check('private listed for admin, not queued', r.data.includes('QA admin private'));
+
+let r2: any;
+// admin switches: pause by hand, and moderation on/off
+r = await call('admin', '/admin?/pause', { form: {} });
+r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/png', size: 10 }] } });
+check('admin can pause submissions', r.status === 503 && r.data.paused, r);
+r = await call('admin', '/admin');
+check('admin page offers resume while paused', r.data.includes('Resume submissions') && r.data.includes('by an admin'));
+await call('admin', '/admin?/resume', { form: {} });
+r = await call('a', '/api/upload/presign', { json: { files: [{ type: 'image/png', size: 10 }] } });
+check('admin can resume submissions', r.status === 200, r);
+
+await call('admin', '/admin?/moderation', { form: { on: 'false' } });
+r = await call('admin', '/admin');
+check('moderation shows as off', r.data.includes('Moderation: off') && r.data.includes('Turn moderation on'));
+up = await upload(files.right);
+r = await call('a', '/api/images', { json: { meta: { title: 'QA unmoderated' }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true } });
+r2 = await call('b', `/image/${r.data.id}`);
+check('moderation off: published at once', r2.status === 200, r2.status);
+await call('admin', '/admin?/moderation', { form: { on: 'true' } });
+up = await upload(files.left);
+r = await call('a', '/api/images', { json: { meta: { title: 'QA moderated again' }, pair: { mode: 'single_file', left: (up as any).id }, confirm: true } });
+r2 = await call('b', `/image/${r.data.id}`);
+check('moderation on again: hidden until approved', r2.status === 404, r2.status);
+r2 = await call('b', '/admin?/moderation', { form: { on: 'false' } });
+check('visitors cannot flip moderation', r2.status === 403 || r2.data?.type === 'failure', r2);
+await call('admin', '/admin?/moderation', { form: { on: 'false' } });

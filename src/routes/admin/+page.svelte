@@ -23,15 +23,40 @@
 	{:else}
 		<form method="post" action="?/logout" use:enhance><button class="link small">Sign out</button></form>
 
-		{#if data.paused}
-			<div class="panel">
-				<strong>Submissions are paused</strong>
-				<span class="muted small"> since {new Date(data.paused.since).toLocaleString()} ({data.paused.reason})</span>
-				<form method="post" action="?/resume" use:enhance style="margin-top: 0.6em">
-					<button class="primary">Resume submissions</button>
+		<div class="panel">
+			<div class="row switch">
+				<div>
+					<strong>Submissions: {data.paused ? 'paused' : 'open'}</strong>
+					<div class="muted small">
+						{#if data.paused}
+							Paused since {new Date(data.paused.since).toLocaleString()} ({data.paused.reason === 'admin' ? 'by an admin' : data.paused.reason}).
+							Browsing, search and likes still work.
+						{:else}
+							Pausing stops uploads and new collections for everyone. Browsing, search and likes keep working.
+						{/if}
+					</div>
+				</div>
+				<form method="post" action={data.paused ? '?/resume' : '?/pause'} use:enhance>
+					<button class={data.paused ? 'primary' : ''}>{data.paused ? 'Resume submissions' : 'Pause submissions'}</button>
 				</form>
 			</div>
-		{/if}
+			<div class="row switch">
+				<div>
+					<strong>Moderation: {data.moderation ? 'on' : 'off'}</strong>
+					<div class="muted small">
+						{#if data.moderation}
+							New public images and collections wait in the queue below until approved.
+						{:else}
+							New submissions are published at once. Anything already pending stays pending until reviewed.
+						{/if}
+					</div>
+				</div>
+				<form method="post" action="?/moderation" use:enhance>
+					<input type="hidden" name="on" value={String(!data.moderation)} />
+					<button class={data.moderation ? '' : 'primary'}>{data.moderation ? 'Turn moderation off' : 'Turn moderation on'}</button>
+				</form>
+			</div>
+		</div>
 
 		<p class="muted small">
 			Storage: {(data.storage.used / 1048576).toFixed(0)} MB of {(data.storage.limit / 1048576).toFixed(0)} MB
@@ -62,9 +87,6 @@
 		{/each}
 
 		<h2>Moderation queue</h2>
-		{#if !data.moderation}
-			<p class="muted small">Moderation is off; new submissions are approved at once. Anything still pending from earlier is listed.</p>
-		{/if}
 
 		{#each data.queue.collections as c (c.id)}
 			<div class="panel">
@@ -115,6 +137,14 @@
 {/snippet}
 
 <style>
+	.switch {
+		justify-content: space-between;
+		align-items: center;
+		padding: 0.4em 0;
+	}
+	.switch + .switch {
+		border-top: 1px solid var(--border);
+	}
 	.recent {
 		list-style: none;
 		padding: 0;

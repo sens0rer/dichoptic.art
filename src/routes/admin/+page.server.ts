@@ -1,7 +1,8 @@
 import { fail } from '@sveltejs/kit';
 import { z } from 'zod';
 import { isAdmin, login, logout } from '#lib/server/admin';
-import { clearFlag, flaggedClients, pausedInfo, resume } from '#lib/server/abuse';
+import { clearFlag, flaggedClients, pause, pausedInfo, resume } from '#lib/server/abuse';
+import { moderationOn, setModeration } from '#lib/server/settings';
 import { config } from '#lib/server/config';
 import { storageUsed } from '#lib/server/quota';
 import { pendingQueue, privateSubmissions } from '#lib/server/content';
@@ -17,7 +18,7 @@ export async function load({ cookies }) {
 	if (!isAdmin(cookies)) return { admin: false as const };
 	return {
 		admin: true as const,
-		moderation: config.moderation,
+		moderation: await moderationOn(),
 		paused: await pausedInfo(),
 		flagged: await flaggedClients(),
 		storage: { used: await storageUsed(), limit: config.storageLimitBytes },
@@ -55,6 +56,15 @@ export const actions = {
 			if (p.type === 'collection') await rejectCollection(tx, p.id, p.reason || null);
 			else await rejectImage(tx, p.id, p.reason || null);
 		});
+	},
+	pause: async ({ cookies }) => {
+		if (!isAdmin(cookies)) return fail(403);
+		await pause('admin');
+	},
+	moderation: async ({ request, cookies }) => {
+		if (!isAdmin(cookies)) return fail(403);
+		const on = (await request.formData()).get('on') === 'true';
+		await setModeration(on);
 	},
 	resume: async ({ cookies }) => {
 		if (!isAdmin(cookies)) return fail(403);
