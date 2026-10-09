@@ -70,8 +70,8 @@
 							♥ {e.likeCount}
 						</span>
 					</span>
-					{#if e.submittedBy || e.credit}
-						<span class="muted small credit">{e.submittedBy ?? plainText(e.credit)}</span>
+					{#if e.author || e.credit}
+						<span class="muted small credit">{e.author ?? plainText(e.credit)}</span>
 					{/if}
 				</a>
 			</li>

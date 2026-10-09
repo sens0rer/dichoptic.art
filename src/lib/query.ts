@@ -60,7 +60,7 @@ export interface Entry {
 	thumbH: number;
 	likeCount: number;
 	count: number;
-	submittedBy: string | null;
+	author: string | null;
 	credit: string | null;
 	ca: string;
 }
