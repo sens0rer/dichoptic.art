@@ -61,7 +61,6 @@ export interface Entry {
 	likeCount: number;
 	count: number;
 	author: string | null;
-	credit: string | null;
 	ca: string;
 }
 

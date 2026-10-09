@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { untrack } from 'svelte';
 	import { entryHref, type Entry } from '#lib/query';
-	import { plainText } from '#lib/links';
 	import { thumbSrcset, thumbUrl } from '#lib/urls';
 
 	let {
@@ -70,8 +69,8 @@
 							♥ {e.likeCount}
 						</span>
 					</span>
-					{#if e.author || e.credit}
-						<span class="muted small credit">{e.author ?? plainText(e.credit)}</span>
+					{#if e.author}
+						<span class="muted small credit">{e.author}</span>
 					{/if}
 				</a>
 			</li>

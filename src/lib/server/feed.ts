@@ -93,13 +93,13 @@ export async function listEntries(
 		WITH e AS (
 			SELECT 'image'::text AS type, i.id, i.title, i.thumb_prefix AS "thumbPrefix",
 				i.thumb_w AS "thumbW", i.thumb_h AS "thumbH", i.like_count, 1 AS count,
-				i.author, i.credit, i.created_at::text AS ca
+				i.author, i.created_at::text AS ca
 			FROM images i
 			WHERE i.collection_id IS NULL AND i.deleted_at IS NULL AND i.status = 'approved' AND NOT i.private
 				AND ${and(conds.map((c) => c.image))}
 			UNION ALL
 			SELECT 'collection', c.id, c.title, cov.thumb_prefix, cov.thumb_w, cov.thumb_h, c.like_count,
-				cnt.n, c.author, c.credit, c.created_at::text
+				cnt.n, c.author, c.created_at::text
 			FROM collections c
 			JOIN LATERAL (
 				SELECT ci.thumb_prefix, ci.thumb_w, ci.thumb_h FROM images ci
@@ -113,7 +113,7 @@ export async function listEntries(
 				AND ${and(conds.map((c) => c.collection))}
 		)
 		SELECT e.type, e.id, e.title, e."thumbPrefix", e."thumbW", e."thumbH", e.like_count AS "likeCount",
-			e.count, e.author, e.credit, e.ca
+			e.count, e.author, e.ca
 		FROM e
 		WHERE ${anchor ? position(sort, anchor, opts.before ? 'before' : 'after') : sql`TRUE`}
 		ORDER BY ${orderBy(sort, !!opts.before)}
