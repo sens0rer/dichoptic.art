@@ -70,7 +70,7 @@
 						</span>
 					</span>
 					{#if e.author}
-						<span class="muted small credit">{e.author}</span>
+						<span class="muted small credit">by {e.author}</span>
 					{/if}
 				</a>
 			</li>
