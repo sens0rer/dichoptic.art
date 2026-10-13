@@ -56,7 +56,7 @@
 	{/if}
 
 	<div class="row actions">
-		{#if data.live}<LikeButton type="collection" id={c.id} count={c.likeCount} liked={data.liked} />{/if}
+		{#if data.live}{#key c.id}<LikeButton type="collection" id={c.id} count={c.likeCount} liked={data.liked} />{/key}{/if}
 		{#if !data.isPrivate}<ShareButtons title={c.title} />{/if}
 		{#if data.isOwner}
 			<a class="btn" href="/upload?collection={c.id}">Add images</a>

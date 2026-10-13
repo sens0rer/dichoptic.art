@@ -56,7 +56,7 @@
 		</div>
 		<div class="actions">
 			{#if data.live}
-				<LikeButton type="image" id={image.id} count={image.likeCount} liked={data.liked} />
+				{#key image.id}<LikeButton type="image" id={image.id} count={image.likeCount} liked={data.liked} />{/key}
 			{/if}
 			{#if !data.isPrivate}<ShareButtons title={image.title} />{/if}
 			{#if data.isOwner}
