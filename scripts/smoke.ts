@@ -219,3 +219,38 @@ r = await call('a', '/api/images', { json: { meta: { title: 'QA brown again' }, 
 check('same colours: duplicate', !!r.data.duplicate, r);
 await call('a', `/api/images/${brownId}`, { method: 'DELETE' });
 await call('a', `/api/images/${greenId}`, { method: 'DELETE' });
+
+// opening a recovery link merges the browser's own submissions into the linked owner
+r = await call('b', '/api/feed');
+const target = r.data.entries[0];
+const likesBefore = target.likeCount;
+const mA = await upload(files.left);
+r = await call('a', '/api/images', { json: { meta: { title: 'QA claim A' }, pair: { mode: 'single_file', left: mA }, confirm: true } });
+const claimA = r.data.id;
+const mB = await upload(files.right);
+r = await call('b', '/api/images', { json: { meta: { title: 'QA claim B' }, pair: { mode: 'single_file', left: mB }, confirm: true } });
+const claimB = r.data.id;
+await call('a', '/api/like', { json: { type: target.type, id: target.id } });
+await call('b', '/api/like', { json: { type: target.type, id: target.id } });
+const oldCookieA = jars.a;
+const keyB = jars.b.split('=')[1];
+r = await call('a', '/api/claim', { json: { key: keyB } });
+check('claim asks for confirmation when the browser has its own submissions', r.status === 409 && r.data.needsConfirm, r);
+r = await call('a', '/api/claim', { json: { key: keyB, merge: true } });
+check('claim with merge succeeds', r.status === 200, r);
+r = await call('a', '/me');
+check('merged: both images now under one owner', r.data.includes('QA claim A') && r.data.includes('QA claim B'));
+r = await call('b', '/me');
+check('the linked owner sees both too', r.data.includes('QA claim A') && r.data.includes('QA claim B'));
+const keepA = jars.a;
+jars.a = oldCookieA;
+r = await call('a', '/me');
+check('the old key still works and resolves to the merged owner', r.data.includes('QA claim A') && r.data.includes('QA claim B'));
+jars.a = keepA;
+r = await call('b', '/api/feed');
+const after = r.data.entries.find((e: any) => e.id === target.id);
+check('likes on the same target counted once after merge', after.likeCount === likesBefore + 1, { likesBefore, now: after.likeCount });
+r = await call('a', `/api/images/${claimA}`, { method: 'DELETE' });
+check('merged owner can edit the images that came from the other', r.status === 200, r);
+r = await call('b', `/api/images/${claimB}`, { method: 'DELETE' });
+await call('b', '/api/like', { json: { type: target.type, id: target.id } });

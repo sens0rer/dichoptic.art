@@ -25,9 +25,12 @@ export function setOwnerCookie(cookies: Cookies, key: string) {
 	});
 }
 
+// A key whose owner was merged into another still works: it resolves to the owner it became.
 export async function findOwner(key: string | undefined): Promise<Owner | null> {
 	if (!key) return null;
-	const [row] = await db.select().from(owners).where(eq(owners.keyHash, hashKey(key)));
+	let [row] = await db.select().from(owners).where(eq(owners.keyHash, hashKey(key)));
+	for (let hops = 0; row?.mergedInto && hops < 5; hops++)
+		[row] = await db.select().from(owners).where(eq(owners.id, row.mergedInto));
 	return row ? { id: row.id, key } : null;
 }
 

@@ -90,7 +90,7 @@ Four **fixed categories** (dimension, medium, alteration, chromacy) are real col
 - On a visitor's first upload (or like), the server creates an **owner key**: a long random secret. There is one key per person, not per item, so a single recovery link covers all their submissions. The DB stores only its hash in `owners`; the raw key lives in an httpOnly cookie.
 - Every image and collection records `owner_id`. Edit and delete are allowed only when the request's key hashes to that `owner_id`.
 - **`/me`** — "my submissions": images and collections owned by the current key, with edit/delete. Shows the **recovery link** `/claim/<key>`.
-- **`/claim/<key>`** — opening it on any device sets the cookie, so that device now owns the same submissions. The link is also shown right after each upload with a "save this link" note.
+- **`/claim/<key>`** — opening it on any device sets the cookie, so that device now owns the same submissions. If that browser already has submissions or likes of its own, the page asks for confirmation and then **combines** them into the owner from the link (likes both made on the same item count once). The browser's old key keeps working: it now opens the combined owner. The link is also shown right after each upload with a "save this link" note.
 - The key doubles as the like-dedupe identity, so likes follow the owner across claimed devices.
 - The owner cookie is only ever set after the visitor accepts cookies (see Cookie consent). Opening `/claim/<key>` shows the same prompt first.
 - Consequences: the link is effectively a password — anyone holding it can edit and delete. Losing both cookie and link means losing edit access (no recovery without accounts). Edit/delete are server-enforced, never UI-only.

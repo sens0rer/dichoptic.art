@@ -1,0 +1,1 @@
+ALTER TABLE "owners" ADD COLUMN "merged_into" text;

@@ -69,6 +69,8 @@ const moderation = () => ({
 export const owners = pgTable('owners', {
 	id: text('id').primaryKey(),
 	keyHash: text('key_hash').notNull().unique(),
+	// Set when this owner was combined into another via a recovery link; the old key then acts as the new owner.
+	mergedInto: text('merged_into'),
 	...timestamps()
 });
 
