@@ -1,5 +1,5 @@
 import { THUMB_WIDTHS } from '../vocab';
-import { upright, type Prepared } from './process';
+import { makeThumbs, type Prepared } from './process';
 import { storage } from './storage';
 
 const EXT = { jpeg: 'jpg', png: 'png', webp: 'webp' } as const;
@@ -27,21 +27,13 @@ export async function storePair(
 	tmpKeys: { left: string; right?: string }
 ): Promise<StoredPair> {
 	const base = `img/${imageId}/${fresh}`;
-	let thumbW = 0;
-	let thumbH = 0;
 	let bytes = p.left.buf.length + (p.right?.buf.length ?? 0);
-	for (const w of THUMB_WIDTHS) {
-		const { data, info } = await upright(p.pair)
-			.flatten({ background: '#000' })
-			.resize({ width: w, withoutEnlargement: true })
-			.toColorspace('srgb')
-			.webp({ quality: 82 })
-			.toBuffer({ resolveWithObject: true });
-		await storage.put(`${base}-${w}.webp`, data, 'image/webp');
-		bytes += data.length;
-		thumbW = info.width;
-		thumbH = info.height;
+	const thumbs = await makeThumbs(p.pair);
+	for (const t of thumbs) {
+		await storage.put(`${base}-${t.width}.webp`, t.data, 'image/webp');
+		bytes += t.data.length;
 	}
+	const { w: thumbW, h: thumbH } = thumbs[thumbs.length - 1];
 	const common = { thumbPrefix: base, thumbW, thumbH, bytes, leftW: p.left.width, leftH: p.left.height };
 	if (p.mode === 'single_file') {
 		const fileKey = `${base}-file.${EXT[p.left.format]}`;

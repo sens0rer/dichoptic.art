@@ -37,6 +37,7 @@ Uploaded files live under `data/uploads/` (local `Storage` implementation; origi
 | `npm run check` | svelte-check |
 | `npm test` | unit tests (query params, metadata validation, pair processing) |
 | `npm run db:generate` | new migration after editing `src/lib/server/db/schema.ts` |
+| `npx tsx scripts/regen-thumbs.ts` | rebuild every image's thumbnails from its originals (after changing thumbnail settings); uses `DATABASE_URL`, and R2 when `STORAGE=r2` |
 | `npx tsx scripts/smoke.ts` | end-to-end API checks against a running dev server |
 | `npx tsx scripts/smoke-admin.ts` | moderation and abuse-limit checks; start the dev server with `MODERATION=on FLAG_THRESHOLD=2 PAUSE_THRESHOLD=4 SITE_PAUSE_THRESHOLD=1000` |
 

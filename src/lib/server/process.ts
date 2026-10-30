@@ -1,5 +1,5 @@
 import sharp, { type Metadata } from 'sharp';
-import { ACCEPTED_TYPES, MAX_FILE_BYTES } from '../vocab';
+import { ACCEPTED_TYPES, MAX_FILE_BYTES, THUMB_WIDTHS } from '../vocab';
 import type { SourceMode } from '../vocab';
 
 const FORMATS = { jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' } as const;
@@ -103,4 +103,29 @@ export async function prepare(
 	]);
 	const pair = await composite(left, right);
 	return { mode, left, right, pair, phash: await fingerprint(pair) };
+}
+
+// High quality, and sharper colour edges (smartSubsample): saturated red/cyan images smear badly at lower settings.
+export const THUMB_QUALITY = 92;
+
+export interface Thumb {
+	width: number;
+	data: Buffer;
+	// Actual size of this variant; the largest one is stored as the image's thumb size.
+	w: number;
+	h: number;
+}
+
+export async function makeThumbs(pair: Buffer): Promise<Thumb[]> {
+	const out: Thumb[] = [];
+	for (const width of THUMB_WIDTHS) {
+		const { data, info } = await upright(pair)
+			.flatten({ background: '#000' })
+			.resize({ width, withoutEnlargement: true })
+			.toColorspace('srgb')
+			.webp({ quality: THUMB_QUALITY, smartSubsample: true })
+			.toBuffer({ resolveWithObject: true });
+		out.push({ width, data, w: info.width, h: info.height });
+	}
+	return out;
 }
