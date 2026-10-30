@@ -106,7 +106,7 @@ export async function prepare(
 }
 
 // High quality, and sharper colour edges (smartSubsample): saturated red/cyan images smear badly at lower settings.
-export const THUMB_QUALITY = 92;
+export const THUMB_QUALITY = 95;
 
 export interface Thumb {
 	width: number;
