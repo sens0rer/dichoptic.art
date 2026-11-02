@@ -96,7 +96,12 @@
 	// A screen point over the frame at display position i (0 = left).
 	type Anchor = { i: number; client: Pt };
 	type View = { z: number; x: number; y: number };
-	const MAX_ZOOM = 8;
+	// Up to where one image pixel covers 8x8 screen pixels, and never less than 8x.
+	const maxZoom = $derived(
+		layout
+			? Math.max(8, 8 * Math.max(image.leftW / layout.left.w, (image.rightW ?? image.leftW) / layout.right.w))
+			: 8
+	);
 	const STEP = 1.5;
 	let view = $state<View>({ z: 1, x: 0.5, y: 0.5 });
 	let pairEl = $state<HTMLElement>();
@@ -107,20 +112,21 @@
 	// Keeps the centre far enough from the edges that neither frame shows past its image.
 	function clampView(v: View): View {
 		if (!layout) return v;
+		const z = Math.min(v.z, maxZoom);
 		let hx = 0;
 		let hy = 0;
 		for (const d of [layout.left, layout.right]) {
-			const f = frameSize(d, v.z);
-			hx = Math.max(hx, f.w / (2 * d.w * v.z));
-			hy = Math.max(hy, f.h / (2 * d.h * v.z));
+			const f = frameSize(d, z);
+			hx = Math.max(hx, f.w / (2 * d.w * z));
+			hy = Math.max(hy, f.h / (2 * d.h * z));
 		}
 		const c = (n: number, h: number) => Math.min(1 - h, Math.max(h, n));
-		return { z: v.z, x: c(v.x, hx), y: c(v.y, hy) };
+		return { z, x: c(v.x, hx), y: c(v.y, hy) };
 	}
 	// Re-clamped on render too, so resizing the window or the size slider never shows past an edge.
 	const shown = $derived(clampView(view));
 	const zoomed = $derived(shown.z > 1.001);
-	const clampZoom = (z: number) => Math.min(MAX_ZOOM, Math.max(1, z));
+	const clampZoom = (z: number) => Math.min(maxZoom, Math.max(1, z));
 
 	// Mean offset of the anchors from their frames' centres, in image fractions at zoom z.
 	function offset(anchors: Anchor[], z: number): Pt {
@@ -376,7 +382,7 @@
 			Zoom
 			<button type="button" onclick={() => zoomBy(1 / STEP)} disabled={!zoomed} aria-label="Zoom out (−)" title="Zoom out (−)">−</button>
 			<span class="muted">{Math.round(shown.z * 100)}%</span>
-			<button type="button" onclick={() => zoomBy(STEP)} disabled={shown.z >= MAX_ZOOM} aria-label="Zoom in (+)" title="Zoom in (+)">+</button>
+			<button type="button" onclick={() => zoomBy(STEP)} disabled={shown.z >= maxZoom} aria-label="Zoom in (+)" title="Zoom in (+)">+</button>
 			<button type="button" onclick={resetZoom} disabled={!zoomed} title="Reset zoom (0)">Reset</button>
 		</span>
 	{/if}
