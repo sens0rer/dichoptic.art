@@ -329,7 +329,7 @@
 						width={o.d.w}
 						height={o.d.h}
 						draggable="false"
-						style="transform: translate({fs.w / 2 - shown.x * o.d.w * shown.z}px, {fs.h / 2 - shown.y * o.d.h * shown.z}px) scale({shown.z})"
+						style="width: {o.d.w * shown.z}px; height: {o.d.h * shown.z}px; transform: translate({Math.round(fs.w / 2 - shown.x * o.d.w * shown.z)}px, {Math.round(fs.h / 2 - shown.y * o.d.h * shown.z)}px)"
 					/>
 				</div>
 			{/each}
@@ -443,9 +443,11 @@
 	.zoomed .frame:active {
 		cursor: grabbing;
 	}
+	/* Zoom sets the image's real size rather than scale(): a scaled image is drawn in GPU tiles
+	   that can leave hairline seams at some zoom levels. Offsets are whole pixels for the same reason. */
 	.pair img {
 		display: block;
-		transform-origin: 0 0;
+		max-width: none;
 		user-select: none;
 		-webkit-user-select: none;
 		-webkit-touch-callout: none;
