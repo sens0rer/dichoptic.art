@@ -8,7 +8,9 @@ const pg = new EmbeddedPostgres({
 	user: 'postgres',
 	password: 'postgres',
 	port: 5433,
-	persistent: true
+	persistent: true,
+	// Otherwise initdb takes the OS locale, which on Windows can be a non-UTF-8 code page.
+	initdbFlags: ['--encoding=UTF8', '--locale=C']
 });
 
 if (!existsSync(`${dir}/PG_VERSION`)) await pg.initialise();
