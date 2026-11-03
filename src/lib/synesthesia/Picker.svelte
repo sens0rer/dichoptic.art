@@ -1,8 +1,14 @@
 <script lang="ts">
 	import { css, vivid } from './okhsl';
 
-	// Okhsl, each 0..1. Hue on the ring, saturation and lightness on the sliders.
-	let { h = $bindable(0), s = $bindable(0), l = $bindable(0.5) }: { h: number; s: number; l: number } = $props();
+	// Okhsl, each 0..1. Hue on the ring, saturation and lightness on the sliders. `fresh` is true
+	// until the wheel or a slider is touched; until then the centre shows neutral grey.
+	let {
+		h = $bindable(0),
+		s = $bindable(1),
+		l = $bindable(0.5),
+		fresh = $bindable(true)
+	}: { h: number; s: number; l: number; fresh?: boolean } = $props();
 
 	// The ring shows every hue at its most saturated, so hues are easy to find whatever the
 	// sliders say; the centre shows the colour actually chosen.
@@ -11,7 +17,7 @@
 		Array.from({ length: 11 }, (_, i) => `${f(i / 10)} ${i * 10}%`).join(', ');
 	const satTrack = $derived(`linear-gradient(to right, ${stops((t) => css(h, t, l))})`);
 	const lightTrack = $derived(`linear-gradient(to right, ${stops((t) => css(h, s, t))})`);
-	const current = $derived(css(h, s, l));
+	const current = $derived(fresh ? css(0, 0, 0.5) : css(h, s, l));
 
 	let wheel = $state<HTMLElement>();
 
@@ -22,6 +28,7 @@
 	}
 
 	function down(e: PointerEvent) {
+		fresh = false;
 		wheel!.setPointerCapture(e.pointerId);
 		setHue(e);
 	}
@@ -33,6 +40,7 @@
 		if (e.key === 'ArrowRight' || e.key === 'ArrowUp') h = (h + step) % 1;
 		else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') h = (h - step + 1) % 1;
 		else return;
+		fresh = false;
 		e.preventDefault();
 	}
 </script>
@@ -58,11 +66,11 @@
 	<div class="sliders">
 		<label>
 			<span>Saturation</span>
-			<input type="range" min="0" max="1" step="0.001" bind:value={s} style="background: {satTrack}" />
+			<input type="range" min="0" max="1" step="0.001" bind:value={s} oninput={() => (fresh = false)} style="background: {satTrack}" />
 		</label>
 		<label>
 			<span>Lightness</span>
-			<input type="range" min="0" max="1" step="0.001" bind:value={l} style="background: {lightTrack}" />
+			<input type="range" min="0" max="1" step="0.001" bind:value={l} oninput={() => (fresh = false)} style="background: {lightTrack}" />
 		</label>
 	</div>
 </div>

@@ -26,11 +26,15 @@
 	const finished = $derived(allCovered(parsed, spans));
 
 	let selection = $state<Span | null>(null);
-	// The picker starts every selection the same way (saturation full, lightness 0: black), so one
-	// answer never pulls the next.
+	// The picker starts every selection the same way, so one answer never pulls the next: knobs at
+	// full saturation and middle lightness, but neutral grey shown (and saved, if confirmed as is)
+	// until the wheel or a slider is touched.
 	let h = $state(0);
 	let s = $state(1);
-	let l = $state(0);
+	let l = $state(0.5);
+	let fresh = $state(true);
+	const GREY = { h: 0, s: 0, l: 0.5 };
+	const shown = $derived(fresh ? GREY : { h, s, l });
 	let note = $state('');
 	let noteOpen = $state(false);
 	let busy = $state(false);
@@ -46,7 +50,8 @@
 	function resetPicker() {
 		h = 0;
 		s = 1;
-		l = 0;
+		l = 0.5;
+		fresh = true;
 		note = '';
 		noteOpen = false;
 	}
@@ -89,7 +94,7 @@
 			kind,
 			start: selection.start,
 			end: selection.end,
-			colour: kind === 'colour' ? makeColour(h, s, l) : null,
+			colour: kind === 'colour' ? makeColour(shown.h, shown.s, shown.l) : null,
 			note: note.trim() || null,
 			supersedes: null,
 			answeredAt: new Date().toISOString(),
@@ -102,7 +107,7 @@
 		const mark = { clientId: a.clientId, kind, start: a.start!, end: a.end! };
 		marks = [...marks, mark];
 		history = [...history, mark];
-		if (kind === 'colour') previous = { h, s, l };
+		if (kind === 'colour') previous = { ...shown };
 		resetPicker();
 		if (kind === 'note') return;
 		advance(selection.end);
@@ -146,6 +151,7 @@
 	function samePrevious() {
 		if (!previous) return;
 		({ h, s, l } = previous);
+		fresh = false;
 	}
 
 	// "Continue where you left off": item, scroll and selection, saved on the server.
@@ -220,7 +226,7 @@
 				<span class="label">{finished ? 'All marked' : 'Tap a word to select it'}</span>
 			{/if}
 		</div>
-		<Picker bind:h bind:s bind:l />
+		<Picker bind:h bind:s bind:l bind:fresh />
 		{#if noteOpen}
 			<div class="note">
 				<textarea bind:value={note} rows="2" placeholder="Anything to add about this part (saved with your answer)"></textarea>
@@ -229,7 +235,7 @@
 		{/if}
 		<div class="actions">
 			<button class="primary confirm" onclick={() => answer('colour')} disabled={!selection || busy}>
-				<span class="swatch" style="background: {css(h, s, l)}"></span>Confirm
+				<span class="swatch" style="background: {css(shown.h, shown.s, shown.l)}"></span>Confirm
 			</button>
 			<button onclick={() => answer('none')} disabled={!selection || busy}>No colour</button>
 			<button onclick={() => (noteOpen = !noteOpen)} class:on={noteOpen || note}>Note</button>
@@ -324,15 +330,16 @@
 		padding: 0.55em 0.8em;
 	}
 	.confirm {
-		gap: 8px;
+		gap: 10px;
 	}
+	/* The colour about to be confirmed, large enough to check at a glance. */
 	.swatch {
 		/* Fixed size: as a flex item it would otherwise shrink to an oval. */
 		flex: none;
-		width: 16px;
-		height: 16px;
+		width: 30px;
+		height: 30px;
 		border-radius: 50%;
-		border: 1.5px solid #eee;
+		border: 2px solid #eee;
 	}
 	button.on {
 		border-color: #111;
@@ -352,9 +359,16 @@
 			display: grid;
 			grid-template-columns: 1.4fr 1fr 1fr;
 		}
+		/* On phones Confirm is a tall button: the colour sits above the word, big. */
 		.actions .confirm {
 			grid-row: span 2;
+			flex-direction: column;
 			justify-content: center;
+			gap: 8px;
+		}
+		.actions .confirm .swatch {
+			width: 52px;
+			height: 52px;
 		}
 	}
 </style>
