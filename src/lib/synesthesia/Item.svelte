@@ -26,10 +26,11 @@
 	const finished = $derived(allCovered(parsed, spans));
 
 	let selection = $state<Span | null>(null);
-	// The picker starts every selection at the same neutral grey, so one answer never pulls the next.
+	// The picker starts every selection the same way (saturation full, lightness 0: black), so one
+	// answer never pulls the next.
 	let h = $state(0);
-	let s = $state(0);
-	let l = $state(0.5);
+	let s = $state(1);
+	let l = $state(0);
 	let note = $state('');
 	let noteOpen = $state(false);
 	let busy = $state(false);
@@ -44,8 +45,8 @@
 
 	function resetPicker() {
 		h = 0;
-		s = 0;
-		l = 0.5;
+		s = 1;
+		l = 0;
 		note = '';
 		noteOpen = false;
 	}
