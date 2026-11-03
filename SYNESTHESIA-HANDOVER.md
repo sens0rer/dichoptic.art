@@ -47,12 +47,12 @@ Every pool is filled by a script, safe to run again (existing items are skipped)
 | Related / distant languages | `import-wikipedia.ts` | Wikipedia openings (bread, moon, sun…) | 10 / 11 |
 | Alphabets, numbers, time | `import-generated.ts` (`more` adds new numbers and clock times) | Fixed and generated | 19 / 6 / 11 |
 | Maths | `import-maths.ts` (`more` adds random arithmetic and equations) | LaTeX by school topic, rendered to MathML with Temml | 15 |
-| Songs | `import-lyrics.ts` | Wikisource (and Gutenberg for Burns): nine Ukrainian/English pairs | 18 |
+| Songs (retired) | `import-lyrics.ts` | Wikisource (and Gutenberg for Burns): nine Ukrainian/English pairs. Retired 3 Nov 2026: off the home page, items hidden, earlier answers kept in results and admin. Do not run the script again | 0 (18 hidden) |
 | Your songs | added by her on `/synesthesia/picks` | LRCLIB search or pasted lyrics; visible only to her | — |
 
 `import-words.ts` and `import-pseudowords.ts` need two local files: the BRUK tagged texts (`git clone` github.com/brown-uk/corpus, `data/disambig`) and a Hunspell en_US `.dic` (github.com/wooorm/dictionaries, `dictionaries/en/index.dic`). They are not in the repo.
 
-Adding more: run a script again with new titles (`import-wikipedia.ts <category> <lang> Title…`), a higher `--count`/`--seed` (words, made-up words), `more` (numbers, time, maths), or new entries in the lists at the top of `import-texts.ts`, `import-lyrics.ts`, `import-parallel.ts`. Check new items on the admin pages and hide any that came out wrong.
+Adding more: run a script again with new titles (`import-wikipedia.ts <category> <lang> Title…`), a higher `--count`/`--seed` (words, made-up words), `more` (numbers, time, maths), or new entries in the lists at the top of `import-texts.ts`, `import-parallel.ts`. Check new items on the admin pages and hide any that came out wrong.
 
 Pitfalls the scripts already guard against (worth knowing when adding sources): Wikipedia and Wikisource rate-limit (scripts wait and retry); a phrase search can land on a page that only quotes the words (opening words must begin a line); short Wikisource pages are often lists of versions (the scripts follow the first matching link); poems are taken from Wikisource's poem blocks; re-running with changed cleanup would duplicate an article, so Wikipedia items are matched by page id.
 
@@ -75,7 +75,8 @@ Recorded in SYNESTHESIA.md as they were made; the main ones:
 - Made-up words are generated (UniPseudo's method) rather than taken from ARC/Wuggy (ARC is a web form only, Wuggy needs Python); sound-alikes are filtered approximately.
 - English separate words use subtitle frequencies filtered by a dictionary, Ukrainian ones the BRUK corpus, rather than rating norms.
 - Three English songs replaced (Rock-a-bye Baby, Greensleeves, Blow the Man Down) because Wikisource lacks the planned ones in usable form.
-- Retests are a category that re-serves her finished items, not a separate three-repeat module.
+- Retests are a category that re-serves her finished items, not a separate three-repeat module. Hidden items are not retested.
+- The preloaded Songs category is retired (only her own songs remain); the "I know this song" flag belonged to it and no longer shows on new items.
 - A song she adds uses the whole lyrics.
 
 ## Not done / ideas

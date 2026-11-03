@@ -1,3 +1,4 @@
+// RETIRED (3 Nov 2026): the Songs category is off the home page and its items are hidden. Kept for the record.
 // Adds the song set: one Ukrainian and one English song for each kind of song, so both languages
 // cover the same moods. Words only, a verse or two each; public-domain texts from Wikisource.
 //   npx tsx scripts/synesthesia/import-lyrics.ts

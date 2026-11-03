@@ -22,7 +22,7 @@ export async function load({ cookies }) {
 	]);
 	const inGroup = (id: string) => unfinished.filter((u) => (id === 'retests' ? u.retest : !u.retest && u.category === id));
 	return {
-		categories: CATEGORIES.map((cat) => {
+		categories: CATEGORIES.filter((cat) => !('retired' in cat)).map((cat) => {
 			const n = c[cat.id] ?? { total: 0, finished: 0, unfinished: 0 };
 			const fresh = n.total - n.finished - n.unfinished;
 			// The status line, split around "N unfinished", which the page turns into a toggle.

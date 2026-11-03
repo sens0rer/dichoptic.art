@@ -28,7 +28,8 @@ export async function participant(cookies: Cookies): Promise<string> {
 export const enrol = (pid: string) => db.insert(synParticipants).values({ id: pid }).onConflictDoNothing();
 
 // "items" categories hand out items from their own pool; Retests re-serves finished items from
-// any category; the reverse test has a page of its own.
+// any category; the reverse test has a page of its own. A retired category is off the home page
+// (its items are hidden) but stays in results and admin, so earlier answers keep their place.
 export const CATEGORIES = [
 	{ id: 'texts', kind: 'items', name: 'Texts', description: 'Short passages in Ukrainian and English.' },
 	{ id: 'parallel', kind: 'items', name: 'Parallel texts', description: 'The same passage in Ukrainian and in English.' },
@@ -42,7 +43,7 @@ export const CATEGORIES = [
 	{ id: 'numbers', kind: 'items', name: 'Numbers', description: 'Digits, longer numbers and number words.' },
 	{ id: 'time', kind: 'items', name: 'Time', description: 'Weekdays, months, seasons, times of day, dates and clock times.' },
 	{ id: 'maths', kind: 'items', name: 'Maths', description: 'School maths, from arithmetic to simple calculus.' },
-	{ id: 'lyrics', kind: 'items', name: 'Songs', description: 'Well-known Ukrainian and English songs, as words.' },
+	{ id: 'lyrics', kind: 'items', name: 'Songs', description: 'Well-known Ukrainian and English songs, as words.', retired: true },
 	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one and colour its lyrics.' },
 	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.' },
 	{ id: 'reverse', kind: 'reverse', name: 'Reverse test', description: 'A colour is shown; write something that has that colour.' }
@@ -66,12 +67,13 @@ async function timeZone(pid: string) {
 }
 
 // Finished items that can be retested: finished before today (her day), and not already waiting
-// as an unfinished retest. Least-retested first, then the ones retested longest ago.
+// as an unfinished retest, and not hidden. Least-retested first, then the ones retested longest ago.
 async function retestCandidates(pid: string, limit: number) {
 	const tz = await timeZone(pid);
 	return db.execute<{ id: string }>(sql`
 		SELECT s.id FROM syn_stimuli s
-		WHERE EXISTS (
+		WHERE NOT s.hidden
+			AND EXISTS (
 				SELECT 1 FROM syn_attempts f
 				WHERE f.stimulus_id = s.id AND f.participant_id = ${pid} AND NOT f.retest
 					AND f.finished_at IS NOT NULL

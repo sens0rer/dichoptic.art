@@ -12,7 +12,7 @@ A test suite for one participant (a friend) to record her synesthetic colour exp
 
 ## Flow
 - **On opening the page**, if she was in the middle of an item, a "Continue where you left off" button comes first (see Mobile).
-- **Home: a list of categories** (known-language texts, terminology, separate words, pseudowords, similar languages, dissimilar languages, alphabets, numbers, maths, time, lyrics, her picks, reverse test, retests). She picks any one and can switch at any time; nothing forces an order.
+- **Home: a list of categories** (known-language texts, terminology, separate words, pseudowords, similar languages, dissimilar languages, alphabets, numbers, maths, time, her picks, reverse test, retests). She picks any one and can switch at any time; nothing forces an order.
 - **Inside a category she gets one item at a time** (a text, a word list, an alphabet…), the next one she has not started, in a random order fixed per browser (the order is recorded).
 - **Everything is saved as she marks it.** There is no submit step; each confirmed answer is stored immediately with its timecodes.
 - **Finished:** when every part of the item is covered by an answer (a colour or "no colour"), it moves to **Results** and a "Next" button offers a new item. It does not jump away by itself, so she can still add overlapping answers (a sentence over words she already marked) before moving on.
@@ -153,7 +153,7 @@ Goal: a set that is varied in a way we can show, not just by impression.
 4. **Single words** chosen from published word norms, stratified so every level is represented:
    - English: concreteness (Brysbaert et al., ~40k words), valence/arousal/dominance (Warriner et al., ~14k), age of acquisition (Kuperman et al.), frequency (SUBTLEX-US);
    - Ukrainian: fewer norms exist; translate a stratified English set and also sample by frequency from a Ukrainian corpus.
-5. **Song lyrics.** One Ukrainian and one English song per kind of song, so both languages cover the same moods:
+5. **Song lyrics.** _Dropped (3 Nov 2026): the preloaded songs below are retired; only her picks remain. The items are hidden, answers already given to them are kept._ Originally: one Ukrainian and one English song per kind of song, so both languages cover the same moods:
 
    | Kind | Ukrainian | English |
    |---|---|---|
@@ -197,7 +197,7 @@ Every category draws from a source large enough to keep adding items for a long 
 | Numbers | generated (digits, lengths, number words) | unlimited |
 | Maths | generated from templates per school topic (arithmetic, algebra, functions, limits, derivatives, integrals), written as LaTeX | unlimited |
 | Time | fixed sets (weekdays, months, seasons) plus generated phrases (dates, clock times) | small fixed core, unlimited phrases |
-| Lyrics | Wikisource, folk-song collections, LRCLIB | thousands per language |
+| Lyrics (retired) | Wikisource, folk-song collections | — |
 | Her picks | songs she adds on the page | as many as she adds |
 | Reverse test | random colours over the Okhsl space | unlimited |
 
@@ -215,4 +215,4 @@ Every category draws from a source large enough to keep adding items for a long 
 ## Decisions to approve
 _None right now._
 
-Decided: open to anyone with the link; answers carry a per-browser id (cookie) for filtering. One colour per selection; two-tone letters and gradients go in notes. Picker always on screen, reset for each selection to saturation max and middle lightness, showing grey until touched, with "same as previous". No confidence rating. Maths is properly typeset (MathML), each symbol and group selectable. Text: tap selects a word, handles expand or contract, auto-advance to the next unmarked word. Maths: tap a symbol, a box with corner handles that snaps to the formula's structure, and a strip of enclosing groups. Interface in English. Categories she picks freely; items autosave and go to Results when fully covered or to Unfinished when skipped; retests are a category that re-serves her finished items at random, blind, with no fixed schedule. Results shows her colours (views logged). Lyrics: the confirmed song list, paired by kind across the two languages, plus "her picks": songs she adds herself, any number, one at a time.
+Decided: open to anyone with the link; answers carry a per-browser id (cookie) for filtering. One colour per selection; two-tone letters and gradients go in notes. Picker always on screen, reset for each selection to saturation max and middle lightness, showing grey until touched, with "same as previous". No confidence rating. Maths is properly typeset (MathML), each symbol and group selectable. Text: tap selects a word, handles expand or contract, auto-advance to the next unmarked word. Maths: tap a symbol, a box with corner handles that snaps to the formula's structure, and a strip of enclosing groups. Interface in English. Categories she picks freely; items autosave and go to Results when fully covered or to Unfinished when skipped; retests are a category that re-serves her finished items at random, blind, with no fixed schedule. Results shows her colours (views logged). Lyrics: only "her picks", songs she adds herself, any number, one at a time (the preloaded Ukrainian/English songs were dropped).
