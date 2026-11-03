@@ -31,7 +31,7 @@ export const enrol = (pid: string) => db.insert(synParticipants).values({ id: pi
 // any category; the reverse test has a page of its own.
 export const CATEGORIES = [
 	{ id: 'texts', kind: 'items', name: 'Texts', description: 'Short passages in Ukrainian and English.' },
-	{ id: 'parallel', kind: 'items', name: 'Parallel texts', description: 'The same passage in different languages.' },
+	{ id: 'parallel', kind: 'items', name: 'Parallel texts', description: 'The same passage in Ukrainian and in English.' },
 	{ id: 'terminology', kind: 'items', name: 'Terminology', description: 'Passages on specialist subjects, in Ukrainian and English.' },
 	{ id: 'words', kind: 'items', name: 'Separate words', description: 'Ukrainian and English words without context, from very common to rare.' },
 	{ id: 'pseudowords', kind: 'items', name: 'Made-up words', description: 'English-looking words that do not exist.' },
@@ -204,7 +204,9 @@ export async function attemptsList(pid: string, finished: boolean) {
 		.where(
 			and(
 				eq(synAttempts.participantId, pid),
-				finished ? isNotNull(synAttempts.finishedAt) : isNull(synAttempts.finishedAt)
+				finished ? isNotNull(synAttempts.finishedAt) : isNull(synAttempts.finishedAt),
+				// A hidden item is out of rounds: its unfinished attempts are no longer offered.
+				finished ? undefined : eq(synStimuli.hidden, false)
 			)
 		)
 		.orderBy(desc(synAttempts.createdAt));

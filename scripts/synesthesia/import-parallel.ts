@@ -1,28 +1,19 @@
-// Adds parallel texts: the same passage in several languages, each item tagged with the pair it
-// belongs to, so analysis can compare colours across languages for the same meaning.
+// Adds parallel texts: the same passage in Ukrainian and in English, each item tagged with the pair
+// it belongs to, so analysis can compare colours across the two languages for the same meaning.
 //   npx tsx scripts/synesthesia/import-parallel.ts
 //
-// - The Universal Declaration of Human Rights, Articles 1, 3 and 19, in every test language
-//   (official translations, from the Unicode UDHR project: github.com/eric-muller/udhr).
+// - The Universal Declaration of Human Rights, Articles 1, 3 and 19,
+//   in Ukrainian and English (official translations, from the Unicode UDHR project:
+//   github.com/eric-muller/udhr).
 // - Three short passages written for these tests in English and Ukrainian. They avoid colour
 //   words, so meaning and colour association do not get mixed up.
 import { add, close, type NewItem } from './pool';
 
-// UDHR file code → language code used on the page.
+// UDHR file code → language code used on the page. Only the languages she reads: the same text
+// in a language she does not know tells nothing about meaning.
 const UDHR: Record<string, string> = {
 	eng: 'en',
-	ukr: 'uk',
-	bel: 'be',
-	pol: 'pl',
-	deu_1996: 'de',
-	fra: 'fr',
-	lat: 'la',
-	arb: 'ar',
-	kor: 'ko',
-	jpn: 'ja',
-	cmn_hans: 'zh',
-	tha: 'th',
-	heb: 'he'
+	ukr: 'uk'
 };
 const ARTICLES = [1, 3, 19];
 

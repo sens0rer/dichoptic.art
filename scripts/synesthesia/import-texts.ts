@@ -32,7 +32,7 @@ const UKRAINIAN: (Tags & { search: string; start: string | null; page?: string }
 	{ search: 'Contra spem spero Леся Українка', start: 'Гетьте, думи, ви хмари осінні', genre: 'poetry', theme: 'hope, defiance', era: '19th century', form: 'verse' },
 	{ search: 'Каменярі Франко', start: 'Я бачив дивний сон', genre: 'poetry', theme: 'labour, struggle', era: '19th century', form: 'verse' },
 	{ search: 'Кайдашева сім’я Нечуй-Левицький', page: 'Кайдашева сімя̀/I', start: null, genre: 'novel', theme: 'village, landscape', era: '19th century', form: 'prose' },
-	{ search: 'Рукавичка казка', start: 'Ішов дід лісом', genre: 'folk tale', theme: 'animals', era: 'folk', form: 'prose' },
+	{ search: 'Рукавичка казка', page: 'Рукавичка (казка)', start: 'Ішов дід лісом', genre: 'folk tale', theme: 'animals', era: 'folk', form: 'prose' },
 	{ search: 'Лісова пісня', page: 'Лісова пісня', start: 'Старезний, густий, предковічний ліс', genre: 'drama', theme: 'nature, love', era: '20th century', form: 'prose' },
 	{ search: 'Маруся Квітка-Основ’яненко', start: null, genre: 'novella', theme: 'love, village', era: '19th century', form: 'prose' },
 	{ search: 'Конституція України', start: 'Україна є суверенна і незалежна', genre: 'legal', theme: 'state', era: 'contemporary', form: 'prose' }

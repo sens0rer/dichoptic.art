@@ -188,7 +188,7 @@ Every category draws from a source large enough to keep adding items for a long 
 | Ukrainian texts | uk.wikisource (classics, folk songs), Ukrainian Wikipedia | thousands of works; 1M+ articles |
 | English texts | Project Gutenberg, en.wikisource, English Wikipedia | 70k+ books; 6M+ articles |
 | Terminology texts | Wikipedia articles from chosen specialist categories, both languages | effectively unlimited |
-| Parallel texts | Wikisource works with existing translations; our own translations; the Universal Declaration of Human Rights (same text in all test languages) | grows as we translate |
+| Parallel texts | Wikisource works with existing translations; our own translations; the Universal Declaration of Human Rights (Ukrainian and English only: the same text in a language she does not read tells nothing about meaning) | grows as we translate |
 | Separate words (EN) | OpenSubtitles frequencies (FrequencyWords) kept only where the word is a lowercase base form in Hunspell en_US (no names, fragments or inflections) | about 19 000 words |
 | Separate words (UK) | lemma frequencies from the hand-tagged Ukrainian Brown Corpus (BRUK); nouns, verbs, adjectives and adverbs; names excluded by their tag | about 36 000 words |
 | Pseudowords (EN) | generated from English letter statistics, real words removed | unlimited |
