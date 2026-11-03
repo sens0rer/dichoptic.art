@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { isMathLeaf, type Parsed, type Span } from './segment';
+	import { isRadical, mathLeaves, radicalRect, type Parsed, type Span } from './segment';
 
 	// Selection in typeset maths. Text-style handles follow reading order, which jumps between
 	// numerator and denominator, sub- and superscripts; here selection is spatial and snaps to the
@@ -13,7 +13,8 @@
 		size = 30,
 		bottomInset = 0,
 		disabled = false,
-		selection = $bindable(null)
+		selection = $bindable(null),
+		preview = $bindable('')
 	}: {
 		body: string;
 		parsed: Parsed;
@@ -22,6 +23,8 @@
 		bottomInset?: number;
 		disabled?: boolean;
 		selection: Span | null;
+		// The selected part as MathML, for the "Selected" label.
+		preview?: string;
 	} = $props();
 
 	let box = $state<HTMLElement>();
@@ -31,7 +34,7 @@
 
 	function index() {
 		if (!box) return;
-		leaves = [...box.querySelectorAll('mi, mn, mo, mtext')].filter((e) => isMathLeaf(e.textContent ?? ''));
+		leaves = mathLeaves(box);
 		ranges = new Map();
 		leaves.forEach((leaf, i) => {
 			for (let e: Element | null = leaf; e && e !== box; e = e.parentElement) {
@@ -44,12 +47,17 @@
 	// ---- drawing: selected and answered symbols, and the box with its corners ----
 	let frame = $state<{ x: number; y: number; w: number; h: number } | null>(null);
 	let raw = $state<{ x: number; y: number; w: number; h: number } | null>(null);
+	// A root's √ is not an element of its own, so its highlight is drawn as a box over it.
+	let radicals = $state<{ x: number; y: number; w: number; h: number; sel: boolean; done: boolean }[]>([]);
+
+	// The area of a symbol: for a root, only its √.
+	const rect = (leaf: Element) => (isRadical(leaf) ? radicalRect(leaf) : leaf.getBoundingClientRect());
 
 	function union(sel: Span) {
 		const b = box!.getBoundingClientRect();
 		let l = Infinity, t = Infinity, r = -Infinity, btm = -Infinity;
 		for (let i = sel.start; i < sel.end; i++) {
-			const rc = leaves[i]?.getBoundingClientRect();
+			const rc = leaves[i] && rect(leaves[i]);
 			if (!rc) continue;
 			l = Math.min(l, rc.left);
 			t = Math.min(t, rc.top);
@@ -61,16 +69,54 @@
 	}
 
 	function paint() {
+		const b = box?.getBoundingClientRect();
+		const marks: typeof radicals = [];
 		leaves.forEach((leaf, i) => {
-			leaf.classList.toggle('sel', !!selection && i >= selection.start && i < selection.end);
+			const sel = !!selection && i >= selection.start && i < selection.end;
+			if (isRadical(leaf)) {
+				const r = radicalRect(leaf);
+				if (b && (sel || covered[i]))
+					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, sel, done: !!covered[i] });
+				return;
+			}
+			leaf.classList.toggle('sel', sel);
 			leaf.classList.toggle('done', !!covered[i]);
 		});
+		radicals = marks;
 		frame = selection && box ? union(selection) : null;
+		preview = selection && box ? previewOf(selection) : '';
+	}
+
+	// The selection as MathML: the element it is exactly, or the run of neighbours inside the
+	// smallest element holding it; the √ alone as a symbol.
+	function previewOf(sel: Span) {
+		const first = leaves[sel.start];
+		if (!first) return '';
+		if (sel.end - sel.start === 1 && isRadical(first)) return '<math><mo>√</mo></math>';
+		let e: Element | null = first;
+		while (e && e !== box) {
+			const r = ranges.get(e)!;
+			if (r.start <= sel.start && r.end >= sel.end) break;
+			e = e.parentElement;
+		}
+		if (!e || e === box) return '';
+		const r = ranges.get(e)!;
+		const inner =
+			r.start === sel.start && r.end === sel.end
+				? e.localName === 'math' ? e.innerHTML : e.outerHTML
+				: [...e.children]
+						.filter((c) => {
+							const cr = ranges.get(c);
+							return cr && cr.start >= sel.start && cr.end <= sel.end;
+						})
+						.map((c) => c.outerHTML)
+						.join('');
+		return `<math><mrow>${inner}</mrow></math>`;
 	}
 
 	function reveal() {
 		if (!selection || drag || !leaves[selection.start]) return;
-		const r = leaves[selection.start].getBoundingClientRect();
+		const r = rect(leaves[selection.start]);
 		const bottom = innerHeight - bottomInset - 24;
 		if (r.bottom > bottom) scrollBy({ top: r.bottom - bottom + size, behavior: 'smooth' });
 		else if (r.top < 24) scrollBy({ top: r.top - 24 - size, behavior: 'smooth' });
@@ -140,7 +186,8 @@
 
 	function down(e: PointerEvent) {
 		if (disabled || e.button > 0) return;
-		const leaf = (e.target as Element).closest('mi, mn, mo, mtext');
+		// A tap on a root outside its contents is a tap on its √.
+		const leaf = (e.target as Element).closest('mi, mn, mo, mtext, msqrt, mroot');
 		const i = leaf ? leaves.indexOf(leaf) : -1;
 		press = i >= 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, i } : null;
 	}
@@ -175,7 +222,7 @@
 		raw = { x: l - b.left, y: t - b.top, w: r - l, h: btm - t };
 		const hit: number[] = [];
 		leaves.forEach((leaf, i) => {
-			const rc = leaf.getBoundingClientRect();
+			const rc = rect(leaf);
 			const cx = (rc.left + rc.right) / 2;
 			const cy = (rc.top + rc.bottom) / 2;
 			if (cx >= l && cx <= r && cy >= t && cy <= btm) hit.push(i);
@@ -203,6 +250,9 @@
 	>
 		{@html body}
 
+		{#each radicals as m, i (i)}
+			<div class="radical" class:sel={m.sel} class:done={m.done} style="left: {m.x}px; top: {m.y}px; width: {m.w}px; height: {m.h}px"></div>
+		{/each}
 		{#if raw}
 			<div class="raw" style="left: {raw.x}px; top: {raw.y}px; width: {raw.w}px; height: {raw.h}px"></div>
 		{/if}
@@ -256,6 +306,21 @@
 		background: rgba(0, 0, 0, 0.16);
 	}
 	.math :global(.done.sel) {
+		background: var(--syn-select, rgba(255, 255, 255, 0.55));
+	}
+	/* Behind the formula, like the symbols' own highlight. */
+	.math {
+		isolation: isolate;
+	}
+	.radical {
+		position: absolute;
+		z-index: -1;
+		pointer-events: none;
+	}
+	.radical.done {
+		background: rgba(0, 0, 0, 0.16);
+	}
+	.radical.sel {
 		background: var(--syn-select, rgba(255, 255, 255, 0.55));
 	}
 	.frame,

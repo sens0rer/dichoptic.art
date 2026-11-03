@@ -202,6 +202,8 @@
 	});
 
 	const selectedText = $derived(selection ? parsed.graphemes.slice(selection.start, selection.end).join('') : '');
+	// In maths, the selected part typeset, not its symbols run together.
+	let mathPreview = $state('');
 </script>
 
 <div class="layout" class:wide style="--panel: {wide ? 0 : panelHeight}px">
@@ -233,6 +235,7 @@
 				bottomInset={wide ? 0 : panelHeight}
 				disabled={busy}
 				bind:selection
+				bind:preview={mathPreview}
 			/>
 		{:else}
 			<Marker
@@ -252,7 +255,9 @@
 	<aside class="panel" bind:clientHeight={panelHeight}>
 		<div class="current">
 			{#if selection}
-				<span class="label">Selected</span> <span class="selected" lang={data.stimulus.lang}>{selectedText}</span>
+				<span class="label">Selected</span>
+				{#if mathPreview}<span class="selected math-preview">{@html mathPreview}</span
+					>{:else}<span class="selected" lang={data.stimulus.lang}>{selectedText}</span>{/if}
 			{:else}
 				<span class="label">{finished ? 'All marked' : 'Tap a word to select it'}</span>
 			{/if}
@@ -363,6 +368,10 @@
 	}
 	.selected {
 		font-weight: 600;
+	}
+	.math-preview {
+		font-weight: normal;
+		font-size: 1.25em;
 	}
 	.actions {
 		display: flex;

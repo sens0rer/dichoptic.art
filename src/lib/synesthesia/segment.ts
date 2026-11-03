@@ -2,7 +2,8 @@
 // reader sees as one character: a letter with its accents, a Hangul syllable, a Thai cluster), so
 // a range means the same thing in every script. Shared by the page and the server.
 
-// 'math': the body is MathML, and each visible symbol (an <mi>, <mn>, <mo> or <mtext>) is one part.
+// 'math': the body is MathML, and each visible symbol (an <mi>, <mn>, <mo> or <mtext>) is one part,
+// and so is the √ of every root, which the browser draws around <msqrt>/<mroot>.
 export type UnitKind = 'word' | 'char' | 'math';
 
 export interface Span {
@@ -26,15 +27,32 @@ export interface Parsed {
 }
 
 // The symbols of MathML, in document order, as their text. The page finds the same elements in
-// the same order (see isMathLeaf), so an index means the same symbol on the server and the page.
-const LEAF = /<(mi|mn|mo|mtext)\b[^>]*>([^<]*)<\/\1>/g;
+// the same order (see mathLeaves), so an index means the same symbol on the server and the page.
+// A root's √ has no element of its own: it counts as a symbol at the root's opening tag.
+const LEAF = /<(mi|mn|mo|mtext)\b[^>]*>([^<]*)<\/\1>|<(msqrt|mroot)\b[^>]*>/g;
 const ENTITIES: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&#x27;': "'" };
 const decode = (s: string) => s.replace(/&(lt|gt|amp|quot|#x27);/g, (m) => ENTITIES[m]);
 // Invisible operators (function application, invisible times…) and spacing are not symbols.
 export const isMathLeaf = (text: string) => text.replace(/[⁡-⁤\s]/g, '') !== '';
+export const isRadical = (e: Element) => e.localName === 'msqrt' || e.localName === 'mroot';
+
+// The symbols of rendered MathML, in the order parse() counts them.
+export const mathLeaves = (root: Element) =>
+	[...root.querySelectorAll<HTMLElement>('mi, mn, mo, mtext, msqrt, mroot')].filter(
+		(e) => isRadical(e) || isMathLeaf(e.textContent ?? '')
+	);
+
+// Where a root's √ is drawn: from the root's left edge to its base, full height (for <mroot> this
+// includes the small index).
+export function radicalRect(e: Element) {
+	const r = e.getBoundingClientRect();
+	const kids = e.localName === 'mroot' ? [...e.children].slice(0, 1) : [...e.children];
+	const right = Math.min(r.right, ...kids.map((k) => k.getBoundingClientRect().left));
+	return { left: r.left, top: r.top, right: Math.max(right, r.left + 4), bottom: r.bottom };
+}
 
 function parseMath(mathml: string): Parsed {
-	const graphemes = [...mathml.matchAll(LEAF)].map((m) => decode(m[2])).filter(isMathLeaf);
+	const graphemes = [...mathml.matchAll(LEAF)].map((m) => (m[3] ? '√' : decode(m[2]))).filter(isMathLeaf);
 	const segments = graphemes.map((_, i) => ({ start: i, end: i + 1, word: true }));
 	return { graphemes, segments, segmentOf: graphemes.map((_, i) => i), units: segments.map(({ start, end }) => ({ start, end })) };
 }

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isMathLeaf, type Parsed } from './segment';
+	import { isRadical, mathLeaves, radicalRect, type Parsed } from './segment';
 
 	interface ResultAnswer {
 		kind: 'colour' | 'none' | 'note';
@@ -56,20 +56,39 @@
 	const ink = (a: ResultAnswer) => ((a.lightness ?? 0) > 0.62 ? '#111' : '#fff');
 
 	let mathBox = $state<HTMLElement>();
-	$effect(() => {
+	// A root's √ is not an element of its own: its colour is a box drawn behind it.
+	let radicals = $state<{ x: number; y: number; w: number; h: number; hex: string | null }[]>([]);
+	function paintMath() {
 		if (!mathBox) return;
-		const leaves = [...mathBox.querySelectorAll<HTMLElement>('mi, mn, mo, mtext')].filter((e) => isMathLeaf(e.textContent ?? ''));
-		leaves.forEach((leaf, i) => {
+		const b = mathBox.getBoundingClientRect();
+		const marks: typeof radicals = [];
+		mathLeaves(mathBox).forEach((leaf, i) => {
 			const a = cover[i];
+			if (isRadical(leaf)) {
+				const r = radicalRect(leaf);
+				if (a && a.kind !== 'note')
+					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, hex: a.kind === 'colour' ? a.hex : null });
+				return;
+			}
 			leaf.style.background = a?.kind === 'colour' ? a.hex! : '';
 			leaf.style.color = a?.kind === 'colour' ? ink(a) : '';
 			leaf.classList.toggle('none', a?.kind === 'none');
 		});
+		radicals = marks;
+	}
+	$effect(() => {
+		void cover;
+		paintMath();
+		if (!mathBox) return;
+		const ro = new ResizeObserver(paintMath);
+		ro.observe(mathBox);
+		return () => ro.disconnect();
 	});
 </script>
 
 {#if math}
-	<div class="text math" bind:this={mathBox} style="--size: {size}px">{@html math}</div>
+	<!-- On one line: the box keeps white space (pre-wrap). -->
+	<div class="text math" bind:this={mathBox} style="--size: {size}px">{@html math}{#each radicals as m, i (i)}<div class="radical" class:none={!m.hex} style="left: {m.x}px; top: {m.y}px; width: {m.w}px; height: {m.h}px; background: {m.hex ?? 'transparent'}"></div>{/each}</div>
 {:else}
 	<div class="text" {lang} dir={rtl ? 'rtl' : 'ltr'} style="--size: {size}px">
 		{#each runs as r, i (i)}{#if r.a?.kind === 'colour'}<span class="c" style="background: {r.a.hex}; color: {ink(r.a)}"
@@ -90,6 +109,15 @@
 	}
 	.math :global(math) {
 		margin: 0.5em 0;
+	}
+	.math {
+		position: relative;
+		isolation: isolate;
+	}
+	.radical {
+		position: absolute;
+		z-index: -1;
+		pointer-events: none;
 	}
 	/* In maths, "no colour" is a dashed outline: an underline would turn + into ±. */
 	.math :global(.none) {

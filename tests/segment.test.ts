@@ -29,6 +29,11 @@ describe('parse', () => {
 		expect(p.units).toHaveLength(5);
 	});
 
+	it('counts the √ of a root as a symbol, before what is under it', () => {
+		const p = parse('<math><mrow><msqrt><mi>x</mi></msqrt><mo>+</mo><mroot><mn>8</mn><mn>3</mn></mroot></mrow></math>', 'math');
+		expect(p.graphemes).toEqual(['√', 'x', '+', '√', '8', '3']);
+	});
+
 	it('finds words in Thai, which has no spaces', () => {
 		const p = parse('สวัสดีครับ', 'word', 'th');
 		expect(p.units.length).toBeGreaterThan(1);
