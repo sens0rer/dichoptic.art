@@ -263,9 +263,9 @@ export const synAttempts = pgTable(
 	'syn_attempts',
 	{
 		id: text('id').primaryKey(),
-		participantId: text('participant_id')
-			.notNull()
-			.references(() => synParticipants.id),
+		// The browser's id. Not a reference: a browser only becomes a participant row with its
+		// first answer, and items can be started before that.
+		participantId: text('participant_id').notNull(),
 		stimulusId: text('stimulus_id')
 			.notNull()
 			.references(() => synStimuli.id),

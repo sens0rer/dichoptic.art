@@ -3,7 +3,7 @@ import { inArray, and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { body, fail } from '#lib/server/api';
 import { db, synAnswers, synAttempts, synReverse } from '#lib/server/db';
-import { participant, recordSession, refreshFinished } from '#lib/server/synesthesia';
+import { enrol, participant, recordSession, refreshFinished } from '#lib/server/synesthesia';
 
 const colour = z.object({
 	h: z.number().min(0).max(1),
@@ -70,6 +70,9 @@ export async function POST(event) {
 	const kept = answers.filter((a) => owned.has(a.attemptId));
 	const attemptIds = [...owned];
 
+	if (!kept.length && !reverse.length) return json({ finished: {}, dropped: answers.length });
+	// The first answer makes this browser a participant.
+	await enrol(pid);
 	await recordSession(pid, session.id, session.device);
 	if (reverse.length)
 		await db

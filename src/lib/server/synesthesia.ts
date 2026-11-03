@@ -12,17 +12,20 @@ const COOKIE = 'syn_participant';
 export async function participant(cookies: Cookies): Promise<string> {
 	let id = cookies.get(COOKIE);
 	if (!id || !/^[A-Za-z0-9]{24}$/.test(id)) id = newFileId();
-	// Set before the first await: a page's layout and page loads run in parallel and share these
-	// cookies, so the second call must already see the id the first one made.
+	// A page's layout and page loads run in parallel and share these cookies; setting the cookie
+	// at once means the second call already sees the id the first one made.
 	cookies.set(COOKIE, id, {
 		path: '/synesthesia',
 		httpOnly: true,
 		sameSite: 'lax',
 		maxAge: 60 * 60 * 24 * 365 * 10
 	});
-	await db.insert(synParticipants).values({ id }).onConflictDoNothing();
 	return id;
 }
+
+// A browser becomes a participant (a row in syn_participants) with its first answer; visiting
+// pages or starting items records nothing about it.
+export const enrol = (pid: string) => db.insert(synParticipants).values({ id: pid }).onConflictDoNothing();
 
 // "items" categories hand out items from their own pool; Retests re-serves finished items from
 // any category; the reverse test has a page of its own.
@@ -247,19 +250,22 @@ export async function result(pid: string, attemptId: string) {
 		.where(and(eq(synAttempts.participantId, pid), eq(synAttempts.stimulusId, row.stimulus.id), isNotNull(synAttempts.finishedAt)))
 		.orderBy(asc(synAttempts.createdAt));
 	const withAnswers = [];
-	for (const a of attempts) {
-		const rows = await db.select().from(synAnswers).where(eq(synAnswers.attemptId, a.id)).orderBy(asc(synAnswers.id));
-		const undone = new Set(rows.filter((r) => r.kind === 'retract').map((r) => r.supersedes));
-		const answers: ResultAnswer[] = rows
-			.filter((r) => r.kind !== 'retract' && !undone.has(r.clientId))
-			.map((r) => {
-				const c = r.colour as { hex: string; l: number } | null;
-				return { kind: r.kind as ResultAnswer['kind'], start: r.start!, end: r.end!, hex: c?.hex ?? null, lightness: c?.l ?? null, note: r.note };
-			});
-		withAnswers.push({ ...a, answers });
-	}
+	for (const a of attempts) withAnswers.push({ ...a, answers: await answersWithColours(a.id) });
 	await db.insert(synResultViews).values({ participantId: pid, stimulusId: row.stimulus.id });
 	return { stimulus: row.stimulus, attempts: withAnswers };
+}
+
+// An attempt's answers in force (undos applied), with their colours: what Results draws. Flags
+// ("I know this song") cover no text and are left out.
+export async function answersWithColours(attemptId: string): Promise<ResultAnswer[]> {
+	const rows = await db.select().from(synAnswers).where(eq(synAnswers.attemptId, attemptId)).orderBy(asc(synAnswers.id));
+	const undone = new Set(rows.filter((r) => r.kind === 'retract').map((r) => r.supersedes));
+	return rows
+		.filter((r) => (r.kind === 'colour' || r.kind === 'none' || r.kind === 'note') && !undone.has(r.clientId))
+		.map((r) => {
+			const c = r.colour as { hex: string; l: number } | null;
+			return { kind: r.kind as ResultAnswer['kind'], start: r.start!, end: r.end!, hex: c?.hex ?? null, lightness: c?.l ?? null, note: r.note };
+		});
 }
 
 // ---- your songs ----

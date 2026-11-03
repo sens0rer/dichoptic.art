@@ -6,7 +6,7 @@
 <svelte:head><title>Export · Colour tests</title></svelte:head>
 
 <main>
-	<div class="top"><a href="/synesthesia">← Tests</a></div>
+	<div class="top"><a href="/synesthesia">← Tests</a> · <a href="/synesthesia/admin">Items</a></div>
 	<h1>Export</h1>
 	<ul class="files">
 		<li><a href="/synesthesia/export/answers.csv" download>answers.csv</a> <span>every answer, with the text it covers, colour values and timecodes</span></li>
@@ -21,7 +21,7 @@
 		<tbody>
 			{#each data.participants as p (p.id)}
 				<tr>
-					<td><code>{p.id}</code></td>
+					<td><a href="/synesthesia/admin/participant/{p.id}"><code>{p.id}</code></a></td>
 					<td>{when(p.created_at)}</td>
 					<td>{p.answers}</td>
 					<td>{p.reverse}</td>
