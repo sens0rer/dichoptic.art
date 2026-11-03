@@ -16,7 +16,6 @@
 	let error = $state('');
 	let songs = $state<Song[] | null>(null);
 	let song = $state<Song | null>(null);
-	let chosen = $state<Set<number>>(new Set());
 	// Pasting instead of searching.
 	let paste = $state(false);
 	let artist = $state('');
@@ -42,21 +41,8 @@
 		}
 	}
 
-	function open(s: Song) {
-		song = s;
-		chosen = new Set();
-	}
-
-	function toggle(i: number) {
-		const next = new Set(chosen);
-		if (next.has(i)) next.delete(i);
-		else next.add(i);
-		chosen = next;
-	}
-
-	const excerpt = $derived(
-		paste ? pasted : song ? song.lines.filter((_, i) => chosen.has(i)).join('\n') : ''
-	);
+	// The whole song is used; blank lines between verses are kept.
+	const excerpt = $derived(paste ? pasted : song ? song.lines.join('\n') : '');
 </script>
 
 <svelte:head><title>Add a song · Colour tests</title></svelte:head>
@@ -83,7 +69,7 @@
 			<ul class="songs">
 				{#each songs as s (s.id)}
 					<li>
-						<button onclick={() => open(s)}>
+						<button onclick={() => (song = s)}>
 							<strong>{s.track}</strong>
 							<span>{s.artist}{s.album ? ` · ${s.album}` : ''}</span>
 						</button>
@@ -99,24 +85,13 @@
 				</div>
 				<button class="link" onclick={() => (song = null)}>Back to results</button>
 			</div>
-			<p class="hint">Tap the lines you want to colour.</p>
-			<ol class="lines">
-				{#each song.lines as line, i (i)}
-					{#if line}
-						<li>
-							<button class:on={chosen.has(i)} onclick={() => toggle(i)} aria-pressed={chosen.has(i)}>{line}</button>
-						</li>
-					{:else}
-						<li class="gap"></li>
-					{/if}
-				{/each}
-			</ol>
+			<p class="lyrics">{excerpt}</p>
 		{/if}
 	{:else}
 		<div class="paste">
 			<label>Artist <input bind:value={artist} autocomplete="off" /></label>
 			<label>Song <input bind:value={track} autocomplete="off" /></label>
-			<label>Lines to colour <textarea bind:value={pasted} rows="8"></textarea></label>
+			<label>Lyrics <textarea bind:value={pasted} rows="8"></textarea></label>
 			<button class="link" onclick={() => (paste = false)}>Search instead</button>
 		</div>
 	{/if}
@@ -127,7 +102,7 @@
 			<input type="hidden" name="track" value={paste ? track : song?.track} />
 			<input type="hidden" name="excerpt" value={excerpt} />
 			<input type="hidden" name="lrclibId" value={paste ? '' : song?.id} />
-			<button class="primary">Add and start colouring</button>
+			<button class="primary">Add the song and start colouring</button>
 		</form>
 	{/if}
 </main>
@@ -169,8 +144,7 @@
 		color: #102a5c;
 		font-size: 0.9rem;
 	}
-	ul,
-	ol {
+	ul {
 		list-style: none;
 		padding: 0;
 		margin: 0;
@@ -196,27 +170,10 @@
 		align-items: baseline;
 		gap: 12px;
 	}
-	.hint {
+	.lyrics {
 		margin: 0;
-		font-size: 0.9rem;
-	}
-	.lines {
-		gap: 4px;
-	}
-	.lines button {
-		width: 100%;
-		justify-content: flex-start;
-		text-align: left;
-		padding: 8px 12px;
-		font-size: 1.05rem;
-	}
-	.lines button.on {
-		background: #222;
-		color: #eee;
-		border-color: #222;
-	}
-	.lines .gap {
-		height: 10px;
+		white-space: pre-wrap;
+		line-height: 1.6;
 	}
 	.paste {
 		display: grid;

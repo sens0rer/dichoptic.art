@@ -14,10 +14,10 @@ export const actions = {
 			.join('\n')
 			.replace(/\n{3,}/g, '\n\n')
 			.trim()
-			.slice(0, 5000);
+			.slice(0, 10000);
 		const lrclibId = Number(form.get('lrclibId')) || null;
 		if (!artist || !track) return fail(400, { error: 'Please give the artist and the song title.' });
-		if (!/\p{L}/u.test(excerpt)) return fail(400, { error: 'Please choose some lines to colour.' });
+		if (!/\p{L}/u.test(excerpt)) return fail(400, { error: 'There are no lyrics to colour.' });
 		const id = await addPick(pid, { artist, track, excerpt, lang: guessLang(excerpt), lrclibId });
 		redirect(303, `/synesthesia/a/${id}`);
 	}
