@@ -20,6 +20,7 @@ export async function load({ cookies }) {
 		retestsAvailable(pid),
 		reverseCount(pid)
 	]);
+	const inGroup = (id: string) => unfinished.filter((u) => (id === 'retests' ? u.retest : !u.retest && u.category === id));
 	return {
 		categories: CATEGORIES.map((cat) => {
 			const n = c[cat.id] ?? { total: 0, finished: 0, unfinished: 0 };
@@ -31,14 +32,20 @@ export async function load({ cookies }) {
 						? `${reverse} answered`
 						: `${n.finished} finished · ${n.unfinished} unfinished · ${fresh} new`;
 			const startable = cat.kind === 'retests' ? retests > 0 : cat.kind === 'reverse' || fresh > 0;
-			return { id: cat.id, name: cat.name, description: cat.description, status, startable };
+			return { id: cat.id, name: cat.name, description: cat.description, status, startable, open: inGroup(cat.id).length };
 		}),
-		unfinished: unfinished.map((u) => ({
-			id: u.id,
-			category: (category(u.category)?.name ?? u.category) + (u.retest ? ' · retest' : ''),
-			title: u.title,
-			preview: u.body.replace(/\s+/g, ' ').slice(0, 80)
-		})),
+		// Unfinished items grouped by category (retests as a group of their own), newest first,
+		// in the same order as the category list.
+		unfinished: CATEGORIES.map((cat) => ({
+			id: cat.id,
+			name: cat.name,
+			items: inGroup(cat.id).map((u) => ({
+				id: u.id,
+				title: u.title,
+				preview: u.body.replace(/\s+/g, ' ').slice(0, 80),
+				from: u.retest ? (category(u.category)?.name ?? u.category) : null
+			}))
+		})).filter((g) => g.items.length),
 		continueTo: position?.attemptId ?? null
 	};
 }

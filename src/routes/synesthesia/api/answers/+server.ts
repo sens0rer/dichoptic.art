@@ -54,14 +54,21 @@ export async function POST(event) {
 	const pid = await participant(event.cookies);
 	const { session, answers, reverse } = parsed.data;
 
-	const attemptIds = [...new Set(answers.map((a) => a.attemptId))];
-	if (attemptIds.length) {
-		const owned = await db
-			.select({ id: synAttempts.id })
-			.from(synAttempts)
-			.where(and(inArray(synAttempts.id, attemptIds), eq(synAttempts.participantId, pid)));
-		if (owned.length !== attemptIds.length) return fail(403, 'Not your item');
-	}
+	// Answers for an item that no longer exists, or is not this browser's, are dropped rather than
+	// refused: refusing would leave them in the device's outbox, retried forever.
+	const requested = [...new Set(answers.map((a) => a.attemptId))];
+	const owned = requested.length
+		? new Set(
+				(
+					await db
+						.select({ id: synAttempts.id })
+						.from(synAttempts)
+						.where(and(inArray(synAttempts.id, requested), eq(synAttempts.participantId, pid)))
+				).map((r) => r.id)
+			)
+		: new Set<string>();
+	const kept = answers.filter((a) => owned.has(a.attemptId));
+	const attemptIds = [...owned];
 
 	await recordSession(pid, session.id, session.device);
 	if (reverse.length)
@@ -69,13 +76,13 @@ export async function POST(event) {
 			.insert(synReverse)
 			.values(reverse.map((r) => ({ ...r, participantId: pid, sessionId: session.id, answeredAt: new Date(r.answeredAt) })))
 			.onConflictDoNothing();
-	if (answers.length)
+	if (kept.length)
 		await db
 			.insert(synAnswers)
-			.values(answers.map((a) => ({ ...a, participantId: pid, sessionId: session.id, answeredAt: new Date(a.answeredAt) })))
+			.values(kept.map((a) => ({ ...a, participantId: pid, sessionId: session.id, answeredAt: new Date(a.answeredAt) })))
 			.onConflictDoNothing();
 
 	const finished: Record<string, boolean> = {};
 	for (const id of attemptIds) finished[id] = await refreshFinished(id);
-	return json({ finished });
+	return json({ finished, dropped: answers.length - kept.length });
 }

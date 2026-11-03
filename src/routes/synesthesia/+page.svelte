@@ -16,6 +16,14 @@
 		saveChecklist(ticks);
 		showChecklist = false;
 	}
+
+	// Unfinished groups start closed (open when there is only one); "3 unfinished" next to a
+	// category opens its group and scrolls to it.
+	let opened = $state<Record<string, boolean>>({});
+	$effect(() => {
+		if (data.unfinished.length === 1) opened[data.unfinished[0].id] = true;
+	});
+	const openGroup = (id: string) => (opened[id] = true);
 </script>
 
 <main>
@@ -50,7 +58,10 @@
 				<div>
 					<strong>{c.name}</strong>
 					<p>{c.description}</p>
-					<p class="counts">{c.status}</p>
+					<p class="counts">
+						{c.status}
+						{#if c.open}· <a href="#u-{c.id}" onclick={() => openGroup(c.id)}>{c.open} unfinished</a>{/if}
+					</p>
 				</div>
 				<div class="go">
 					{#if c.id === 'picks'}<a class="btn" href="/synesthesia/picks">Add a song</a>{/if}
@@ -65,14 +76,19 @@
 
 	{#if data.unfinished.length}
 		<h2>Unfinished</h2>
-		<ul class="list">
-			{#each data.unfinished as u (u.id)}
-				<li>
-					<a href="/synesthesia/a/{u.id}">{u.title ?? u.preview}</a>
-					<span class="muted">{u.category}</span>
-				</li>
-			{/each}
-		</ul>
+		{#each data.unfinished as g (g.id)}
+			<details class="group" id="u-{g.id}" bind:open={opened[g.id]}>
+				<summary><strong>{g.name}</strong> <span class="muted">{g.items.length}</span></summary>
+				<ul class="list">
+					{#each g.items as u (u.id)}
+						<li>
+							<a href="/synesthesia/a/{u.id}">{u.title ?? u.preview}</a>
+							{#if u.from}<span class="muted">{u.from}</span>{/if}
+						</li>
+					{/each}
+				</ul>
+			</details>
+		{/each}
 	{/if}
 </main>
 
@@ -175,6 +191,22 @@
 	.muted {
 		color: var(--syn-muted);
 		font-size: 0.8rem;
+	}
+	.group {
+		margin-bottom: 8px;
+		background: var(--syn-surface);
+		border-radius: 10px;
+		padding: 0 14px;
+	}
+	.group summary {
+		padding: 12px 0;
+		cursor: pointer;
+		display: flex;
+		gap: 8px;
+		align-items: baseline;
+	}
+	.group .list {
+		padding-bottom: 8px;
 	}
 	.list li {
 		min-width: 0;

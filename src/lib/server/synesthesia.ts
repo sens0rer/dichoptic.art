@@ -37,7 +37,7 @@ export const CATEGORIES = [
 	{ id: 'numbers', kind: 'items', name: 'Numbers', description: 'Digits, longer numbers and number words.' },
 	{ id: 'time', kind: 'items', name: 'Time', description: 'Weekdays, months, seasons, times of day, dates and clock times.' },
 	{ id: 'maths', kind: 'items', name: 'Maths', description: 'School maths, from arithmetic to simple calculus.' },
-	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one, pick the lines, and colour them.' },
+	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one and colour its lyrics.' },
 	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.' },
 	{ id: 'reverse', kind: 'reverse', name: 'Reverse test', description: 'A colour is shown; write something that has that colour.' }
 ] as const;
