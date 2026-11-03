@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, tick } from 'svelte';
-	import { isRadical, mathLeaves, radicalRect, type Parsed, type Span } from './segment';
+	import { isDrawn, mathLeaves, drawnRect, type Parsed, type Span } from './segment';
 
 	// Selection in typeset maths. Text-style handles follow reading order, which jumps between
 	// numerator and denominator, sub- and superscripts; here selection is spatial and snaps to the
@@ -47,11 +47,11 @@
 	// ---- drawing: selected and answered symbols, and the box with its corners ----
 	let frame = $state<{ x: number; y: number; w: number; h: number } | null>(null);
 	let raw = $state<{ x: number; y: number; w: number; h: number } | null>(null);
-	// A root's √ is not an element of its own, so its highlight is drawn as a box over it.
+	// A root's √ and a fraction's bar are not elements of their own, so their highlight is a box drawn behind them.
 	let radicals = $state<{ x: number; y: number; w: number; h: number; sel: boolean; done: boolean }[]>([]);
 
-	// The area of a symbol: for a root, only its √.
-	const rect = (leaf: Element) => (isRadical(leaf) ? radicalRect(leaf) : leaf.getBoundingClientRect());
+	// The area of a symbol: for a root only its √, for a fraction only its bar.
+	const rect = (leaf: Element) => (isDrawn(leaf) ? drawnRect(leaf) : leaf.getBoundingClientRect());
 
 	function union(sel: Span) {
 		const b = box!.getBoundingClientRect();
@@ -73,8 +73,8 @@
 		const marks: typeof radicals = [];
 		leaves.forEach((leaf, i) => {
 			const sel = !!selection && i >= selection.start && i < selection.end;
-			if (isRadical(leaf)) {
-				const r = radicalRect(leaf);
+			if (isDrawn(leaf)) {
+				const r = drawnRect(leaf);
 				if (b && (sel || covered[i]))
 					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, sel, done: !!covered[i] });
 				return;
@@ -88,11 +88,11 @@
 	}
 
 	// The selection as MathML: the element it is exactly, or the run of neighbours inside the
-	// smallest element holding it; the √ alone as a symbol.
+	// smallest element holding it; a √ or fraction bar alone as its sign.
 	function previewOf(sel: Span) {
 		const first = leaves[sel.start];
 		if (!first) return '';
-		if (sel.end - sel.start === 1 && isRadical(first)) return '<math><mo>√</mo></math>';
+		if (sel.end - sel.start === 1 && isDrawn(first)) return `<math><mo>${parsed.graphemes[sel.start]}</mo></math>`;
 		let e: Element | null = first;
 		while (e && e !== box) {
 			const r = ranges.get(e)!;
@@ -186,9 +186,16 @@
 
 	function down(e: PointerEvent) {
 		if (disabled || e.button > 0) return;
-		// A tap on a root outside its contents is a tap on its √.
-		const leaf = (e.target as Element).closest('mi, mn, mo, mtext, msqrt, mroot');
-		const i = leaf ? leaves.indexOf(leaf) : -1;
+		// A tap on a root or fraction outside its contents is a tap on its √ or bar. A fraction bar is
+		// thin and the boxes of the letters above and below overlap it, so a tap on its band goes to
+		// the bar first.
+		const onBar = leaves.findIndex((l) => {
+			if (l.localName !== 'mfrac') return false;
+			const r = drawnRect(l);
+			return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+		});
+		const leaf = (e.target as Element).closest('mi, mn, mo, mtext, msqrt, mroot, mfrac');
+		const i = onBar >= 0 ? onBar : leaf ? leaves.indexOf(leaf) : -1;
 		press = i >= 0 ? { id: e.pointerId, x: e.clientX, y: e.clientY, i } : null;
 	}
 	function up(e: PointerEvent) {

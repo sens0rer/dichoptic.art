@@ -25,13 +25,18 @@ describe('parse', () => {
 		const mathml =
 			'<math><mrow><mi>sin</mi><mo>⁡</mo><mspace width="0.1667em"></mspace><mi>x</mi><mo>&lt;</mo><mfrac><mn>1</mn><mn>2</mn></mfrac></mrow></math>';
 		const p = parse(mathml, 'math');
-		expect(p.graphemes).toEqual(['sin', 'x', '<', '1', '2']);
-		expect(p.units).toHaveLength(5);
+		expect(p.graphemes).toEqual(['sin', 'x', '<', '—', '1', '2']);
+		expect(p.units).toHaveLength(6);
 	});
 
 	it('counts the √ of a root as a symbol, before what is under it', () => {
 		const p = parse('<math><mrow><msqrt><mi>x</mi></msqrt><mo>+</mo><mroot><mn>8</mn><mn>3</mn></mroot></mrow></math>', 'math');
 		expect(p.graphemes).toEqual(['√', 'x', '+', '√', '8', '3']);
+	});
+
+	it('counts a fraction bar as a symbol, but not a fraction drawn without one', () => {
+		const p = parse('<math><mfrac><mn>1</mn><mn>2</mn></mfrac><mfrac linethickness="0px"><mi>n</mi><mi>k</mi></mfrac></math>', 'math');
+		expect(p.graphemes).toEqual(['—', '1', '2', 'n', 'k']);
 	});
 
 	it('finds words in Thai, which has no spaces', () => {

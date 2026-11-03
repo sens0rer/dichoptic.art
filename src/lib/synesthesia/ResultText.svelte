@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { isRadical, mathLeaves, radicalRect, type Parsed } from './segment';
+	import { isDrawn, mathLeaves, drawnRect, type Parsed } from './segment';
 
 	interface ResultAnswer {
 		kind: 'colour' | 'none' | 'note';
@@ -56,7 +56,7 @@
 	const ink = (a: ResultAnswer) => ((a.lightness ?? 0) > 0.62 ? '#111' : '#fff');
 
 	let mathBox = $state<HTMLElement>();
-	// A root's √ is not an element of its own: its colour is a box drawn behind it.
+	// A root's √ and a fraction's bar are not elements of their own: their colour is a box drawn behind them.
 	let radicals = $state<{ x: number; y: number; w: number; h: number; hex: string | null }[]>([]);
 	function paintMath() {
 		if (!mathBox) return;
@@ -64,8 +64,8 @@
 		const marks: typeof radicals = [];
 		mathLeaves(mathBox).forEach((leaf, i) => {
 			const a = cover[i];
-			if (isRadical(leaf)) {
-				const r = radicalRect(leaf);
+			if (isDrawn(leaf)) {
+				const r = drawnRect(leaf);
 				if (a && a.kind !== 'note')
 					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, hex: a.kind === 'colour' ? a.hex : null });
 				return;

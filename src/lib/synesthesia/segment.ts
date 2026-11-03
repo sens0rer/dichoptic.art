@@ -3,7 +3,7 @@
 // a range means the same thing in every script. Shared by the page and the server.
 
 // 'math': the body is MathML, and each visible symbol (an <mi>, <mn>, <mo> or <mtext>) is one part,
-// and so is the √ of every root, which the browser draws around <msqrt>/<mroot>.
+// and so is every mark the browser draws itself: the √ of a root and the bar of a fraction.
 export type UnitKind = 'word' | 'char' | 'math';
 
 export interface Span {
@@ -28,31 +28,47 @@ export interface Parsed {
 
 // The symbols of MathML, in document order, as their text. The page finds the same elements in
 // the same order (see mathLeaves), so an index means the same symbol on the server and the page.
-// A root's √ has no element of its own: it counts as a symbol at the root's opening tag.
-const LEAF = /<(mi|mn|mo|mtext)\b[^>]*>([^<]*)<\/\1>|<(msqrt|mroot)\b[^>]*>/g;
+// Drawn marks have no element of their own: each counts as a symbol at its element's opening tag.
+const LEAF = /<(mi|mn|mo|mtext)\b[^>]*>([^<]*)<\/\1>|<(msqrt|mroot|mfrac)\b([^>]*)>/g;
 const ENTITIES: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&#x27;': "'" };
 const decode = (s: string) => s.replace(/&(lt|gt|amp|quot|#x27);/g, (m) => ENTITIES[m]);
 // Invisible operators (function application, invisible times…) and spacing are not symbols.
 export const isMathLeaf = (text: string) => text.replace(/[⁡-⁤\s]/g, '') !== '';
-export const isRadical = (e: Element) => e.localName === 'msqrt' || e.localName === 'mroot';
+// A fraction drawn without a bar (a binomial coefficient) has no mark.
+const noBar = (thickness: string | null | undefined) => thickness != null && parseFloat(thickness) === 0;
+const DRAWN: Record<string, string> = { msqrt: '√', mroot: '√', mfrac: '—' };
+export const isDrawn = (e: Element) =>
+	e.localName in DRAWN && !(e.localName === 'mfrac' && noBar(e.getAttribute('linethickness')));
 
 // The symbols of rendered MathML, in the order parse() counts them.
 export const mathLeaves = (root: Element) =>
-	[...root.querySelectorAll<HTMLElement>('mi, mn, mo, mtext, msqrt, mroot')].filter(
-		(e) => isRadical(e) || isMathLeaf(e.textContent ?? '')
+	[...root.querySelectorAll<HTMLElement>('mi, mn, mo, mtext, msqrt, mroot, mfrac')].filter((e) =>
+		e.localName in DRAWN ? isDrawn(e) : isMathLeaf(e.textContent ?? '')
 	);
 
-// Where a root's √ is drawn: from the root's left edge to its base, full height (for <mroot> this
-// includes the small index).
-export function radicalRect(e: Element) {
+// Where a drawn mark is. A root's √: from the root's left edge to its base, full height (for
+// <mroot> this includes the small index). A fraction's bar: full width, between numerator and
+// denominator, at least 8px tall so it can be seen when highlighted.
+export function drawnRect(e: Element) {
 	const r = e.getBoundingClientRect();
+	if (e.localName === 'mfrac') {
+		const [num, den] = [...e.children].map((k) => k.getBoundingClientRect());
+		const top = num ? num.bottom : r.top + r.height / 2;
+		const bottom = den ? den.top : top;
+		const mid = (top + bottom) / 2;
+		const half = Math.max(4, (bottom - top) / 2);
+		return { left: r.left, top: mid - half, right: r.right, bottom: mid + half };
+	}
 	const kids = e.localName === 'mroot' ? [...e.children].slice(0, 1) : [...e.children];
 	const right = Math.min(r.right, ...kids.map((k) => k.getBoundingClientRect().left));
 	return { left: r.left, top: r.top, right: Math.max(right, r.left + 4), bottom: r.bottom };
 }
 
 function parseMath(mathml: string): Parsed {
-	const graphemes = [...mathml.matchAll(LEAF)].map((m) => (m[3] ? '√' : decode(m[2]))).filter(isMathLeaf);
+	const graphemes = [...mathml.matchAll(LEAF)]
+		.filter((m) => !(m[3] === 'mfrac' && noBar(m[4].match(/linethickness=["']([^"']*)/)?.[1])))
+		.map((m) => (m[3] ? DRAWN[m[3]] : decode(m[2])))
+		.filter(isMathLeaf);
 	const segments = graphemes.map((_, i) => ({ start: i, end: i + 1, word: true }));
 	return { graphemes, segments, segmentOf: graphemes.map((_, i) => i), units: segments.map(({ start, end }) => ({ start, end })) };
 }
