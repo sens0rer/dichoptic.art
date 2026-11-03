@@ -12,6 +12,9 @@
 	// nothing from the previous item carries over.
 	let { data }: { data: PageData } = $props();
 
+	// Scripts written right to left.
+	const RTL = new Set(['ar', 'he']);
+
 	const parsed = $derived(parse(data.stimulus.body, data.stimulus.unit as UnitKind, data.stimulus.lang));
 
 	// Answers in force for this item: what the server has, plus anything still in the outbox.
@@ -22,9 +25,8 @@
 	const finished = $derived(allCovered(parsed, spans));
 
 	let selection = $state<Span | null>(null);
-	// The picker starts every selection at neutral grey (hue at random, so no hue is favoured),
-	// so one answer never pulls the next.
-	let h = $state(Math.random());
+	// The picker starts every selection at the same neutral grey, so one answer never pulls the next.
+	let h = $state(0);
 	let s = $state(0);
 	let l = $state(0.5);
 	let note = $state('');
@@ -40,7 +42,7 @@
 	let wide = $state(false);
 
 	function resetPicker() {
-		h = Math.random();
+		h = 0;
 		s = 0;
 		l = 0.5;
 		note = '';
@@ -178,7 +180,18 @@
 			<p class="done-note">Every part is marked. You can still add or change answers, or go on to the next text.</p>
 		{/if}
 
-		<Marker {parsed} {covered} lang={data.stimulus.lang} bottomInset={wide ? 0 : panelHeight} disabled={busy} bind:selection />
+		{#if data.stimulus.title}<h1 class="title">{data.stimulus.title}</h1>{/if}
+		<Marker
+			{parsed}
+			{covered}
+			lang={data.stimulus.lang}
+			rtl={RTL.has(data.stimulus.lang ?? '')}
+			size={data.stimulus.unit === 'char' ? 40 : 22}
+			byLetter={data.stimulus.unit === 'char'}
+			bottomInset={wide ? 0 : panelHeight}
+			disabled={busy}
+			bind:selection
+		/>
 	</main>
 
 	<aside class="panel" bind:clientHeight={panelHeight}>
@@ -198,7 +211,7 @@
 		{/if}
 		<div class="actions">
 			<button class="primary confirm" onclick={() => answer('colour')} disabled={!selection || busy}>
-				<span class="chip" style="background: {css(h, s, l)}"></span>Confirm
+				<span class="swatch" style="background: {css(h, s, l)}"></span>Confirm
 			</button>
 			<button onclick={() => answer('none')} disabled={!selection || busy}>No colour</button>
 			<button onclick={() => (noteOpen = !noteOpen)} class:on={noteOpen || note}>Note</button>
@@ -216,7 +229,7 @@
 	}
 	.layout.wide {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 380px;
+		grid-template-columns: minmax(0, 1fr) 420px;
 		gap: 28px;
 		align-items: start;
 		padding-bottom: 40px;
@@ -227,6 +240,12 @@
 		gap: 12px;
 		margin-bottom: 14px;
 		font-size: 0.9rem;
+	}
+	.title {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--syn-muted);
+		margin: 0 0 10px;
 	}
 	.where {
 		flex: 1;
@@ -263,7 +282,7 @@
 		border: 1px solid var(--syn-line);
 		border-radius: 12px;
 		padding: 16px;
-		--wheel: 160px;
+		--wheel: 200px;
 	}
 	.current {
 		font-size: 0.85rem;
@@ -289,7 +308,9 @@
 	.confirm {
 		gap: 8px;
 	}
-	.chip {
+	.swatch {
+		/* Fixed size: as a flex item it would otherwise shrink to an oval. */
+		flex: none;
 		width: 16px;
 		height: 16px;
 		border-radius: 50%;
@@ -307,7 +328,7 @@
 	}
 	@media (max-width: 899px) {
 		.panel {
-			--wheel: 112px;
+			--wheel: 144px;
 		}
 		.actions {
 			display: grid;

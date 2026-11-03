@@ -48,9 +48,14 @@ export function parse(text: string, kind: UnitKind, lang?: string | null): Parse
 	const units: Span[] =
 		kind === 'word'
 			? segments.filter((s) => s.word).map(({ start, end }) => ({ start, end }))
-			: graphemes.flatMap((g, i) => (/^\s+$/u.test(g) ? [] : [{ start: i, end: i + 1 }]));
+			: graphemes.flatMap((g, i) => (isCharUnit(g) ? [{ start: i, end: i + 1 }] : []));
 	return { graphemes, segments, segmentOf, units };
 }
+
+// In letter items, a part to mark is a grapheme with a letter, digit or symbol in it (◌ carrying a
+// Thai vowel sign counts). Spaces and punctuation do not, nor does the Arabic tatweel or a
+// zero-width joiner, which are only there to show a letter's joined forms.
+const isCharUnit = (g: string) => /[\p{L}\p{N}\p{S}]/u.test(g.replace(/[ـ‍]/g, ''));
 
 // Which graphemes are covered by the answers (colour or "no colour").
 export function coveredMask(length: number, answers: Span[]): boolean[] {

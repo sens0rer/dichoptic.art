@@ -1,31 +1,55 @@
-// Adds the opening paragraphs of Wikipedia articles to the "texts" pool.
-//   npx tsx scripts/synesthesia/import-wikipedia.ts            (the starter set below)
-//   npx tsx scripts/synesthesia/import-wikipedia.ts uk Title…   (more articles in one language)
+// Adds the opening paragraphs of Wikipedia articles to a text pool.
+//   npx tsx scripts/synesthesia/import-wikipedia.ts                          (every starter set below)
+//   npx tsx scripts/synesthesia/import-wikipedia.ts <category> <lang> Title…  (more articles)
 // Items are content-addressed, so running it twice adds nothing twice.
-import 'dotenv/config';
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import { synStimuli } from '../../src/lib/server/db/schema';
-import { stimulusId } from '../../src/lib/synesthesia/stimulus';
+import { add, close, hasSource, pause, type NewItem } from './pool';
 
-const STARTER: Record<string, string[]> = {
-	uk: ['Бджола медоносна', 'Полярне сяйво', 'Хліб', 'Карпати', 'Бандура', 'Вишиванка'],
-	en: ['Western honey bee', 'Aurora', 'Bread', 'Lighthouse', 'Origami', 'Tide']
+// Same subjects across languages where possible, so languages can be compared on similar content.
+const STARTER: Record<string, Record<string, string[]>> = {
+	texts: {
+		uk: ['Бджола медоносна', 'Полярне сяйво', 'Хліб', 'Карпати', 'Бандура', 'Вишиванка'],
+		en: ['Western honey bee', 'Aurora', 'Bread', 'Lighthouse', 'Origami', 'Tide']
+	},
+	// Specialist subjects, chosen for terms she is unlikely to know.
+	terminology: {
+		uk: ['Мітохондрія', 'Геральдика', 'Такелаж', 'Електроенцефалографія', 'Вексель'],
+		en: ['Mitochondrion', 'Heraldry', 'Rigging', 'Electroencephalography', 'Bill of exchange']
+	},
+	similar: {
+		la: ['Panis', 'Luna'],
+		fr: ['Pain', 'Lune'],
+		de: ['Brot', 'Mond'],
+		be: ['Хлеб', 'Сонца'],
+		pl: ['Chleb', 'Księżyc']
+	},
+	dissimilar: {
+		ar: ['خبز', 'قمر'],
+		ko: ['빵', '달'],
+		ja: ['パン', '月'],
+		zh: ['面包', '月球'],
+		th: ['ขนมปัง', 'ดวงจันทร์'],
+		he: ['לחם', 'הירח']
+	}
 };
 
 // Short enough to fit a screen or two: whole sentences up to about this many characters.
 const MAX = 520;
 
 function trim(text: string) {
-	const first = text.split(/\n+/).find((p) => p.trim().length > 80) ?? text;
-	const sentences = first.match(/[^.!?…]+[.!?…]+(\s|$)/gu) ?? [first];
+	const first = text.split(/\n+/).find((p) => p.trim().length > 60) ?? text;
+	// Wikipedia openings carry bracketed pronunciations and dates; they read badly as test text.
+	const clean = first.replace(/\s*[(（][^()（）]*[)）]/g, '').replace(/\s+/g, ' ').trim();
+	// Sentence ends in the scripts used here, including 。！？ and the Arabic ؟.
+	const sentences = clean.match(/[^.!?…。！？؟]+[.!?…。！？؟]+\s*/gu) ?? [clean];
 	let out = '';
 	for (const s of sentences) {
 		if (out && (out + s).length > MAX) break;
 		out += s;
 	}
-	// Wikipedia openings carry bracketed pronunciations and dates; they read badly as test text.
-	return out.replace(/\s*\([^()]*\)/g, '').replace(/\s+/g, ' ').trim();
+	out = out.trim() || clean;
+	// Thai has no sentence punctuation: cut at the last space before the limit.
+	if (out.length > MAX * 1.3) out = out.slice(0, out.lastIndexOf(' ', MAX) > 0 ? out.lastIndexOf(' ', MAX) : MAX);
+	return out.trim();
 }
 
 async function fetchIntro(lang: string, title: string) {
@@ -39,44 +63,46 @@ async function fetchIntro(lang: string, title: string) {
 		format: 'json',
 		titles: title
 	}).toString();
-	const res = await fetch(url, { headers: { 'user-agent': 'dichoptic.art synesthesia tests (import script)' } });
+	let res: Response;
+	// Wikipedia answers 429 when asked too often; wait and try again, longer each time.
+	for (let attempt = 0; ; attempt++) {
+		res = await fetch(url, { headers: { 'user-agent': 'dichoptic.art synesthesia tests (import script)' } });
+		if (res.status !== 429 || attempt === 5) break;
+		const wait = Number(res.headers.get('retry-after')) * 1000 || 5000 * 2 ** attempt;
+		console.log(`  rate-limited, waiting ${Math.round(wait / 1000)} s`);
+		await pause(wait);
+	}
 	if (!res.ok) throw new Error(`${lang}:${title}: HTTP ${res.status}`);
 	const data = await res.json();
 	const page = Object.values(data.query.pages)[0] as { title: string; extract?: string; pageid?: number };
 	if (!page.extract) throw new Error(`${lang}:${title}: no such article`);
-	return { title: page.title, pageid: page.pageid, text: trim(page.extract) };
+	const text = trim(page.extract);
+	// Disambiguation pages open with a line or two; they are not passages.
+	if (text.length < 80) throw new Error(`${lang}:${title}: too short, probably a disambiguation page`);
+	return { title: page.title, pageid: page.pageid, text };
 }
 
-const [lang, ...titles] = process.argv.slice(2);
-const wanted = lang ? { [lang]: titles } : STARTER;
+const [category, lang, ...titles] = process.argv.slice(2);
+const wanted = category ? { [category]: { [lang]: titles } } : STARTER;
 
-const client = postgres(process.env.DATABASE_URL!, { max: 1 });
-const db = drizzle(client);
 let added = 0;
-for (const [l, list] of Object.entries(wanted))
-	for (const t of list) {
-		// Wikipedia rate-limits quick bursts.
-		await new Promise((r) => setTimeout(r, 1500));
-		try {
-			const a = await fetchIntro(l, t);
-			const row = {
-				category: 'texts',
-				unit: 'word' as const,
-				lang: l,
-				title: null,
-				body: a.text,
-				source: { from: 'wikipedia', lang: l, article: a.title, pageid: a.pageid }
-			};
-			const res = await db
-				.insert(synStimuli)
-				.values({ id: stimulusId(row), ...row })
-				.onConflictDoNothing()
-				.returning({ id: synStimuli.id });
-			added += res.length;
-			console.log(`${res.length ? 'added' : 'exists'}  ${l}  ${a.title}  (${a.text.length} chars)`);
-		} catch (e) {
-			console.warn(String(e));
+for (const [cat, langs] of Object.entries(wanted))
+	for (const [l, list] of Object.entries(langs))
+		for (const t of list) {
+			// Wikipedia rate-limits quick bursts.
+			await pause(1500);
+			try {
+				const a = await fetchIntro(l, t);
+				const source = { from: 'wikipedia', lang: l, pageid: a.pageid };
+				if (await hasSource(cat, source)) {
+					console.log(`exists  ${cat}  ${l}  ${a.title}`);
+					continue;
+				}
+				const item: NewItem = { category: cat, unit: 'word', lang: l, body: a.text, source: { ...source, article: a.title } };
+				added += await add([item]);
+			} catch (e) {
+				console.warn(String(e));
+			}
 		}
-	}
-await client.end();
+await close();
 console.log(`${added} new item(s)`);

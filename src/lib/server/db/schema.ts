@@ -307,3 +307,41 @@ export const synAnswers = pgTable(
 	},
 	(t) => [index().on(t.attemptId)]
 );
+
+// Reverse test: a random colour was shown and she wrote something that has it (or "nothing").
+export const synReverse = pgTable(
+	'syn_reverse',
+	{
+		id: bigserial('id', { mode: 'number' }).primaryKey(),
+		clientId: text('client_id').notNull().unique(),
+		participantId: text('participant_id')
+			.notNull()
+			.references(() => synParticipants.id),
+		sessionId: text('session_id').notNull(),
+		colour: jsonb('colour').notNull(),
+		text: text('text'),
+		nothing: boolean('nothing').notNull().default(false),
+		answeredAt: timestamp('answered_at', { withTimezone: true }).notNull(),
+		tz: text('tz'),
+		shownMs: integer('shown_ms'),
+		receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index().on(t.participantId)]
+);
+
+// Each time she opens a result, so analysis can tell whether she had seen an item's colours
+// before retesting it.
+export const synResultViews = pgTable(
+	'syn_result_views',
+	{
+		id: bigserial('id', { mode: 'number' }).primaryKey(),
+		participantId: text('participant_id')
+			.notNull()
+			.references(() => synParticipants.id),
+		stimulusId: text('stimulus_id')
+			.notNull()
+			.references(() => synStimuli.id),
+		...timestamps()
+	},
+	(t) => [index().on(t.participantId, t.stimulusId)]
+);

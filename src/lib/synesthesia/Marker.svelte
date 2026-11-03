@@ -9,6 +9,8 @@
 		parsed,
 		covered,
 		lang = null,
+		rtl = false,
+		byLetter = false,
 		size = 22,
 		bottomInset = 0,
 		disabled = false,
@@ -17,6 +19,10 @@
 		parsed: Parsed;
 		covered: boolean[];
 		lang?: string | null;
+		// Arabic and Hebrew: the selection starts on the right.
+		rtl?: boolean;
+		// Letter items: taps and handles work letter by letter from the start.
+		byLetter?: boolean;
 		size?: number;
 		bottomInset?: number;
 		disabled?: boolean;
@@ -39,8 +45,8 @@
 		const a = spans[selection.start].getBoundingClientRect();
 		const z = spans[selection.end - 1].getBoundingClientRect();
 		handles = {
-			start: { x: a.left - b.left, y: a.bottom - b.top, h: a.height },
-			end: { x: z.right - b.left, y: z.bottom - b.top, h: z.height }
+			start: { x: (rtl ? a.right : a.left) - b.left, y: a.bottom - b.top, h: a.height },
+			end: { x: (rtl ? z.left : z.right) - b.left, y: z.bottom - b.top, h: z.height }
 		};
 	}
 
@@ -146,7 +152,7 @@
 	function up(e: PointerEvent) {
 		if (!press || press.id !== e.pointerId) return;
 		clearTimeout(press.timer);
-		if (!press.moved && !press.long) selection = segmentSpan(press.g);
+		if (!press.moved && !press.long) selection = byLetter ? { start: press.g, end: press.g + 1 } : segmentSpan(press.g);
 		press = null;
 	}
 
@@ -167,7 +173,7 @@
 		e.stopPropagation();
 		e.preventDefault();
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-		drag = { which, id: e.pointerId, letters: false, lastP: which === 'end' ? selection!.end : selection!.start };
+		drag = { which, id: e.pointerId, letters: byLetter, lastP: which === 'end' ? selection!.end : selection!.start };
 		pointer = { x: e.clientX, y: e.clientY };
 		cacheRects();
 		frame = requestAnimationFrame(autoScroll);
@@ -195,20 +201,21 @@
 		if (g === null) return;
 		const r = rects[g];
 		// The boundary nearest the finger, counted in graphemes; works across lines too.
-		const p = pointer.x > (r.left + r.right) / 2 ? g + 1 : g;
+		const middle = (r.left + r.right) / 2;
+		const p = (rtl ? pointer.x < middle : pointer.x > middle) ? g + 1 : g;
 		const step = p - drag.lastP;
 		drag.lastP = p;
 		const seg = segmentSpan(g);
 		if (drag.which === 'end') {
 			const current = parsed.segmentOf[selection.end - 1];
-			if (drag.letters && g >= selection.end && parsed.segmentOf[g] !== current) drag.letters = false;
+			if (drag.letters && !byLetter && g >= selection.end && parsed.segmentOf[g] !== current) drag.letters = false;
 			else if (!drag.letters && step < 0 && parsed.segmentOf[g] === current) drag.letters = true;
 			let end = drag.letters ? p : blank(g) ? seg.start : seg.end;
 			end = Math.max(end, selection.start + 1);
 			if (end !== selection.end) selection = { start: selection.start, end };
 		} else {
 			const current = parsed.segmentOf[selection.start];
-			if (drag.letters && g < selection.start && parsed.segmentOf[g] !== current) drag.letters = false;
+			if (drag.letters && !byLetter && g < selection.start && parsed.segmentOf[g] !== current) drag.letters = false;
 			else if (!drag.letters && step > 0 && parsed.segmentOf[g] === current) drag.letters = true;
 			let start = drag.letters ? p : blank(g) ? seg.end : seg.start;
 			start = Math.min(start, selection.end - 1);
@@ -254,6 +261,7 @@
 	class:disabled
 	bind:this={box}
 	{lang}
+	dir={rtl ? 'rtl' : 'ltr'}
 	style="--size: {size}px; --lh: {lineHeight}px"
 	onpointerdown={down}
 	onpointermove={move}
@@ -293,7 +301,7 @@
 </div>
 
 {#if lens}
-	<div class="lens" style="left: {lens.x}px; top: {lens.y}px" aria-hidden="true">
+	<div class="lens" dir={rtl ? 'rtl' : 'ltr'} style="left: {lens.x}px; top: {lens.y}px" aria-hidden="true">
 		{#each lens.parts as p, i (i)}{#if p.caret}<span class="caret"></span>{:else}<span class:sel={p.sel}>{p.text}</span>{/if}{/each}
 	</div>
 {/if}

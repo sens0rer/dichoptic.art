@@ -14,6 +14,13 @@ describe('parse', () => {
 		expect(p.units).toHaveLength(3);
 	});
 
+	it('letter items count letters, digits and symbols, not joiners or punctuation', () => {
+		// Arabic ba in its initial, medial and final forms, shown with zero-width joiners.
+		const p = parse('ب‍ ‍ب‍ ‍ب ، 1', 'char', 'ar');
+		const parts = p.units.map((u) => p.graphemes.slice(u.start, u.end).join('').replace(/‍/g, ''));
+		expect(parts).toEqual(['ب', 'ب', 'ب', '1']);
+	});
+
 	it('finds words in Thai, which has no spaces', () => {
 		const p = parse('สวัสดีครับ', 'word', 'th');
 		expect(p.units.length).toBeGreaterThan(1);

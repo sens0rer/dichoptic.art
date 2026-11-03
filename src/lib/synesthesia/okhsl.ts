@@ -214,3 +214,11 @@ export function colour(h: number, s: number, l: number): Colour {
 }
 
 export const css = (h: number, s: number, l: number) => hex(okhslToSrgb(h, s, l));
+
+// The most saturated colour sRGB can show for a hue (the gamut's cusp), for drawing the hue ring.
+export function vivid(h: number) {
+	const a = Math.cos(2 * Math.PI * h);
+	const b = Math.sin(2 * Math.PI * h);
+	const [L, C] = findCusp(a, b);
+	return hex(oklabToLinearSrgb([L, C * a, C * b]).map((x) => Math.min(1, Math.max(0, toSrgb(x)))) as Rgb);
+}

@@ -7,13 +7,13 @@ export async function load({ cookies, params }) {
 	if (!row) error(404, 'Not found');
 	const position = await getPosition(pid);
 	return {
-		attempt: { id: row.attempt.id, finished: !!row.attempt.finishedAt },
+		attempt: { id: row.attempt.id, finished: !!row.attempt.finishedAt, retest: row.attempt.retest },
 		stimulus: {
 			body: row.stimulus.body,
 			unit: row.stimulus.unit,
 			lang: row.stimulus.lang,
 			title: row.stimulus.title,
-			category: category(row.stimulus.category)?.name ?? row.stimulus.category
+			category: row.attempt.retest ? 'Retest' : (category(row.stimulus.category)?.name ?? row.stimulus.category)
 		},
 		answers: await activeAnswers(row.attempt.id),
 		position: position?.attemptId === row.attempt.id ? position : null
@@ -21,13 +21,14 @@ export async function load({ cookies, params }) {
 }
 
 export const actions = {
-	// "Next" and "Skip" both start the next new item in the same category; an item left
-	// unmarked simply stays in Unfinished.
+	// "Next" and "Skip" both start the next item in the same category (Retests, for a retest);
+	// an item left unmarked simply stays in Unfinished.
 	next: async ({ cookies, params }) => {
 		const pid = await participant(cookies);
 		const row = await getAttempt(pid, params.id);
 		if (!row) error(404, 'Not found');
-		const id = await startNext(pid, row.stimulus.category as CategoryId);
-		redirect(303, id ? `/synesthesia/a/${id}` : `/synesthesia?empty=${row.stimulus.category}`);
+		const cat = (row.attempt.retest ? 'retests' : row.stimulus.category) as CategoryId;
+		const id = await startNext(pid, cat);
+		redirect(303, id ? `/synesthesia/a/${id}` : `/synesthesia?empty=${cat}`);
 	}
 };

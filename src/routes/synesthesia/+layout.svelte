@@ -28,12 +28,19 @@
 		min-height: 100dvh;
 		background: var(--syn-bg);
 		color: var(--syn-text);
+		/* Phones flash a tinted box over whatever is pressed; no stray colour on a colour test. */
+		-webkit-tap-highlight-color: transparent;
+	}
+	.syn :global(*) {
+		-webkit-tap-highlight-color: transparent;
 	}
 	.syn :global(button),
 	.syn :global(.btn) {
 		background: var(--syn-surface);
 		color: var(--syn-text);
 		border-color: var(--syn-line);
+		justify-content: center;
+		text-align: center;
 	}
 	.syn :global(button:hover:not(:disabled)),
 	.syn :global(.btn:hover) {

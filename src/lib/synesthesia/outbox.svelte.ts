@@ -1,3 +1,4 @@
+import { checklistAnswers } from './checklist';
 import type { Colour } from './okhsl';
 
 // Answers are written to the device first and sent in order, retried until the server has
@@ -19,6 +20,19 @@ export interface Answer {
 	sincePrevMs: number | null;
 }
 
+// Reverse test: the colour shown and what she wrote (or "nothing").
+export interface ReverseAnswer {
+	clientId: string;
+	colour: Colour;
+	text: string | null;
+	nothing: boolean;
+	answeredAt: string;
+	tz: string | null;
+	shownMs: number | null;
+}
+
+type Item = (Answer & { type?: undefined }) | (ReverseAnswer & { type: 'reverse' });
+
 const KEY = 'syn-outbox';
 
 // A random id. crypto.randomUUID() exists only on https and localhost, and the page is also
@@ -28,7 +42,7 @@ export const uid = () =>
 
 export const outbox = $state({ pending: 0, failing: false });
 
-let items: Answer[] = [];
+let items: Item[] = [];
 let flushing = false;
 let delay = 1000;
 let started = false;
@@ -72,17 +86,21 @@ function session() {
 			viewport: [innerWidth, innerHeight],
 			pixelRatio: devicePixelRatio,
 			gamut: matchMedia('(color-gamut: p3)').matches ? 'p3' : 'srgb',
-			timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+			timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			checklist: checklistAnswers()
 		}
 	};
 }
 
-export function send(answer: Answer) {
+function queue(item: Item) {
 	start();
-	items.push(answer);
+	items.push(item);
 	save();
 	void flush();
 }
+
+export const send = (answer: Answer) => queue(answer);
+export const sendReverse = (answer: ReverseAnswer) => queue({ ...answer, type: 'reverse' });
 
 export function startOutbox() {
 	start();
@@ -96,7 +114,11 @@ async function flush() {
 		const res = await fetch('/synesthesia/api/answers', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ session: session(), answers: batch })
+			body: JSON.stringify({
+				session: session(),
+				answers: batch.filter((i) => i.type !== 'reverse'),
+				reverse: batch.filter((i) => i.type === 'reverse')
+			})
 		});
 		if (!res.ok) throw new Error(String(res.status));
 		const sent = new Set(batch.map((b) => b.clientId));
@@ -118,5 +140,5 @@ async function flush() {
 // Answers for an attempt that are still waiting to be sent (so a reload shows them as done).
 export function pendingFor(attemptId: string) {
 	start();
-	return items.filter((i) => i.attemptId === attemptId);
+	return items.filter((i): i is Answer => i.type !== 'reverse' && i.attemptId === attemptId);
 }

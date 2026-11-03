@@ -1,13 +1,39 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
+	import { onMount } from 'svelte';
+	import { CHECKLIST, checklistDone, saveChecklist } from '#lib/synesthesia/checklist';
 
 	let { data, form } = $props();
 	const empty = $derived(page.url.searchParams.get('empty'));
+
+	// Screen settings that tint colours, checked once per visit; the answers are stored with
+	// the session.
+	let showChecklist = $state(false);
+	let ticks = $state<Record<string, boolean>>({});
+	onMount(() => (showChecklist = !checklistDone()));
+	function doneChecklist() {
+		saveChecklist(ticks);
+		showChecklist = false;
+	}
 </script>
 
 <main>
-	<h1>Colour tests</h1>
+	<div class="head">
+		<h1>Colour tests</h1>
+		<a href="/synesthesia/results">Results</a>
+	</div>
+
+	{#if showChecklist}
+		<section class="checklist">
+			<h2>Before you start</h2>
+			<p>Some phone and computer settings change the colours on screen. Tick what is true right now:</p>
+			{#each CHECKLIST as item (item.id)}
+				<label><input type="checkbox" bind:checked={ticks[item.id]} /> {item.label}</label>
+			{/each}
+			<button class="primary" onclick={doneChecklist}>Done</button>
+		</section>
+	{/if}
 
 	{#if data.continueTo}
 		<a class="btn primary continue" href="/synesthesia/a/{data.continueTo}">Continue where you left off</a>
@@ -24,11 +50,11 @@
 				<div>
 					<strong>{c.name}</strong>
 					<p>{c.description}</p>
-					<p class="counts">{c.finished} finished · {c.unfinished} unfinished · {c.total - c.finished - c.unfinished} new</p>
+					<p class="counts">{c.status}</p>
 				</div>
 				<form method="post" action="?/start" use:enhance>
 					<input type="hidden" name="category" value={c.id} />
-					<button class="primary" disabled={c.total - c.finished - c.unfinished === 0}>Start</button>
+					<button class="primary" disabled={!c.startable}>{c.id === 'reverse' ? 'Open' : 'Start'}</button>
 				</form>
 			</li>
 		{/each}
@@ -55,6 +81,43 @@
 	}
 	h1 {
 		font-size: 1.6rem;
+		margin: 0;
+	}
+	.head {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		margin-bottom: 0.8em;
+	}
+	.checklist {
+		display: grid;
+		gap: 10px;
+		padding: 14px;
+		margin-bottom: 1em;
+		background: var(--syn-surface);
+		border-radius: 10px;
+	}
+	.checklist h2 {
+		margin: 0;
+	}
+	.checklist p {
+		margin: 0;
+		font-size: 0.9rem;
+	}
+	.checklist label {
+		display: flex;
+		align-items: flex-start;
+		gap: 10px;
+		font-size: 0.95rem;
+		color: var(--syn-text);
+	}
+	.checklist input {
+		width: 22px;
+		height: 22px;
+		flex: none;
+	}
+	.checklist button {
+		justify-self: start;
 	}
 	h2 {
 		margin-top: 1.6em;

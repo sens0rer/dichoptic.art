@@ -1,12 +1,12 @@
 <script lang="ts">
-	import { css } from './okhsl';
+	import { css, vivid } from './okhsl';
 
 	// Okhsl, each 0..1. Hue on the ring, saturation and lightness on the sliders.
 	let { h = $bindable(0), s = $bindable(0), l = $bindable(0.5) }: { h: number; s: number; l: number } = $props();
 
-	// The ring shows every hue at a fixed vivid saturation and lightness, so hues are easy to find
-	// whatever the sliders say; the centre shows the colour actually chosen.
-	const ring = Array.from({ length: 37 }, (_, i) => `${css(i / 36, 1, 0.68)} ${i * 10}deg`).join(', ');
+	// The ring shows every hue at its most saturated, so hues are easy to find whatever the
+	// sliders say; the centre shows the colour actually chosen.
+	const ring = Array.from({ length: 73 }, (_, i) => `${vivid(i / 72)} ${i * 5}deg`).join(', ');
 	const stops = (f: (t: number) => string) =>
 		Array.from({ length: 11 }, (_, i) => `${f(i / 10)} ${i * 10}%`).join(', ');
 	const satTrack = $derived(`linear-gradient(to right, ${stops((t) => css(h, t, l))})`);
