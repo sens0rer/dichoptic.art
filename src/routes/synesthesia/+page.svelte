@@ -17,13 +17,9 @@
 		showChecklist = false;
 	}
 
-	// Unfinished groups start closed (open when there is only one); "3 unfinished" next to a
-	// category opens its group and scrolls to it.
+	// "N unfinished" in a category's status opens that category's unfinished items right there,
+	// inside its card.
 	let opened = $state<Record<string, boolean>>({});
-	$effect(() => {
-		if (data.unfinished.length === 1) opened[data.unfinished[0].id] = true;
-	});
-	const openGroup = (id: string) => (opened[id] = true);
 </script>
 
 <main>
@@ -55,41 +51,40 @@
 	<ul class="cats">
 		{#each data.categories as c (c.id)}
 			<li>
-				<div>
-					<strong>{c.name}</strong>
-					<p>{c.description}</p>
-					<p class="counts">
-						{c.status}
-						{#if c.open}· <a href="#u-{c.id}" onclick={() => openGroup(c.id)}>{c.open} unfinished</a>{/if}
-					</p>
+				<div class="card">
+					<div>
+						<strong>{c.name}</strong>
+						<p>{c.description}</p>
+						<p class="counts">
+							{c.before}{#if c.hasUnfinished}{#if c.unfinished.length}<button
+										class="toggle"
+										aria-expanded={!!opened[c.id]}
+										onclick={() => (opened[c.id] = !opened[c.id])}
+										>{c.unfinished.length} unfinished {opened[c.id] ? '▴' : '▾'}</button
+									>{:else}0 unfinished{/if}{/if}{c.after}
+						</p>
+					</div>
+					<div class="go">
+						{#if c.id === 'picks'}<a class="btn" href="/synesthesia/picks">Add a song</a>{/if}
+						<form method="post" action="?/start" use:enhance>
+							<input type="hidden" name="category" value={c.id} />
+							<button class="primary" disabled={!c.startable}>{c.id === 'reverse' ? 'Open' : 'Start'}</button>
+						</form>
+					</div>
 				</div>
-				<div class="go">
-					{#if c.id === 'picks'}<a class="btn" href="/synesthesia/picks">Add a song</a>{/if}
-					<form method="post" action="?/start" use:enhance>
-						<input type="hidden" name="category" value={c.id} />
-						<button class="primary" disabled={!c.startable}>{c.id === 'reverse' ? 'Open' : 'Start'}</button>
-					</form>
-				</div>
+				{#if opened[c.id] && c.unfinished.length}
+					<ul class="list">
+						{#each c.unfinished as u (u.id)}
+							<li>
+								<a href="/synesthesia/a/{u.id}">{u.title ?? u.preview}</a>
+								{#if u.from}<span class="muted">{u.from}</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				{/if}
 			</li>
 		{/each}
 	</ul>
-
-	{#if data.unfinished.length}
-		<h2>Unfinished</h2>
-		{#each data.unfinished as g (g.id)}
-			<details class="group" id="u-{g.id}" bind:open={opened[g.id]}>
-				<summary><strong>{g.name}</strong> <span class="muted">{g.items.length}</span></summary>
-				<ul class="list">
-					{#each g.items as u (u.id)}
-						<li>
-							<a href="/synesthesia/a/{u.id}">{u.title ?? u.preview}</a>
-							{#if u.from}<span class="muted">{u.from}</span>{/if}
-						</li>
-					{/each}
-				</ul>
-			</details>
-		{/each}
-	{/if}
 </main>
 
 <style>
@@ -161,14 +156,35 @@
 		display: grid;
 		gap: 10px;
 	}
-	.cats li {
+	.cats > li {
+		padding: 12px 14px;
+		background: var(--syn-surface);
+		border-radius: 10px;
+	}
+	.cats .card {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 12px;
-		padding: 12px 14px;
-		background: var(--syn-surface);
-		border-radius: 10px;
+	}
+	/* "N unfinished" in the status line: looks like a link, with a finger-sized hit area. */
+	.counts .toggle {
+		display: inline;
+		padding: 6px 2px;
+		margin: -6px 0;
+		background: none;
+		border: none;
+		border-radius: 4px;
+		font: inherit;
+		color: #102a5c;
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		cursor: pointer;
+	}
+	.cats .list {
+		gap: 0;
+		margin-top: 10px;
+		border-top: 1px solid var(--syn-line);
 	}
 	.cats p {
 		margin: 2px 0 0;
@@ -191,22 +207,6 @@
 	.muted {
 		color: var(--syn-muted);
 		font-size: 0.8rem;
-	}
-	.group {
-		margin-bottom: 8px;
-		background: var(--syn-surface);
-		border-radius: 10px;
-		padding: 0 14px;
-	}
-	.group summary {
-		padding: 12px 0;
-		cursor: pointer;
-		display: flex;
-		gap: 8px;
-		align-items: baseline;
-	}
-	.group .list {
-		padding-bottom: 8px;
 	}
 	.list li {
 		min-width: 0;

@@ -25,27 +25,32 @@ export async function load({ cookies }) {
 		categories: CATEGORIES.map((cat) => {
 			const n = c[cat.id] ?? { total: 0, finished: 0, unfinished: 0 };
 			const fresh = n.total - n.finished - n.unfinished;
-			const status =
+			// The status line, split around "N unfinished", which the page turns into a toggle.
+			const [before, after] =
 				cat.kind === 'retests'
-					? `${retests} ready to retest`
+					? [`${retests} ready to retest · `, '']
 					: cat.kind === 'reverse'
-						? `${reverse} answered`
-						: `${n.finished} finished · ${n.unfinished} unfinished · ${fresh} new`;
+						? [`${reverse} answered`, '']
+						: [`${n.finished} finished · `, ` · ${fresh} new`];
 			const startable = cat.kind === 'retests' ? retests > 0 : cat.kind === 'reverse' || fresh > 0;
-			return { id: cat.id, name: cat.name, description: cat.description, status, startable, open: inGroup(cat.id).length };
-		}),
-		// Unfinished items grouped by category (retests as a group of their own), newest first,
-		// in the same order as the category list.
-		unfinished: CATEGORIES.map((cat) => ({
-			id: cat.id,
-			name: cat.name,
-			items: inGroup(cat.id).map((u) => ({
+			// Unfinished items of this category (for Retests, the unfinished retests), newest first.
+			const unfinishedItems = inGroup(cat.id).map((u) => ({
 				id: u.id,
 				title: u.title,
 				preview: u.body.replace(/\s+/g, ' ').slice(0, 80),
 				from: u.retest ? (category(u.category)?.name ?? u.category) : null
-			}))
-		})).filter((g) => g.items.length),
+			}));
+			return {
+				id: cat.id,
+				name: cat.name,
+				description: cat.description,
+				before,
+				after,
+				hasUnfinished: cat.kind !== 'reverse',
+				unfinished: unfinishedItems,
+				startable
+			};
+		}),
 		continueTo: position?.attemptId ?? null
 	};
 }
