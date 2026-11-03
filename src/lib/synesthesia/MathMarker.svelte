@@ -245,7 +245,6 @@
 		overflow-x: auto;
 	}
 	.math :global(math) {
-		font-family: 'STIX Two Math', 'Cambria Math', 'Latin Modern Math', math;
 		/* Room between expressions for the corner knobs. */
 		margin: 1em 0;
 	}
@@ -326,8 +325,5 @@
 		font-size: 18px;
 		padding: 0.2em 0.6em;
 		min-height: 44px;
-	}
-	.groups :global(math) {
-		font-family: 'STIX Two Math', 'Cambria Math', 'Latin Modern Math', math;
 	}
 </style>

@@ -89,7 +89,6 @@
 		padding: 0.08em 0;
 	}
 	.math :global(math) {
-		font-family: 'STIX Two Math', 'Cambria Math', 'Latin Modern Math', math;
 		margin: 0.5em 0;
 	}
 	/* In maths, "no colour" is a dashed outline: an underline would turn + into ±. */

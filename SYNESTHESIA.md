@@ -76,7 +76,7 @@ Response time is a known marker in synesthesia research (genuine associations te
 
 ## Reverse test
 - A colour is shown full-size; she types something that has that colour (a letter, word, number, anything), or marks "nothing".
-- **Random colours**: hue, saturation and lightness each drawn at random across the Okhsl space, so every colour the screen can show is equally likely. The colour shown is stored with the answer.
+- **Random colours** in Okhsl: every hue equally likely; saturation leaning towards vivid (1 − (1 − u)³, mean 0.75); lightness leaning towards the middle (mean of two uniform draws, spread over 0.15–0.85); each new colour at least 0.15 apart (Oklab distance) from the previous one. The colour shown is stored with the answer.
 - Same timecodes as above.
 
 ## Retests

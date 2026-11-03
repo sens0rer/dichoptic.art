@@ -5,9 +5,24 @@
 
 	let { data } = $props();
 
-	// A random colour: hue, saturation and lightness each drawn evenly across Okhsl, so every
-	// colour the screen can show is equally likely.
-	const random = () => makeColour(Math.random(), Math.random(), Math.random());
+	// A random colour in Okhsl: every hue equally likely; saturation leaning towards vivid
+	// (1 − (1 − u)³, mean 0.75); lightness leaning towards the middle (the mean of two draws,
+	// spread over 0.15–0.85), so few near-greys, near-blacks and near-whites.
+	const draw = () => {
+		const r = Math.random;
+		const s = 1 - (1 - r()) ** 3;
+		const l = 0.15 + 0.7 * ((r() + r()) / 2);
+		return makeColour(r(), s, l);
+	};
+
+	// Not too close to the previous colour: redraw while the Oklab distance is under 0.15 (about
+	// seven just-noticeable differences), giving up after a few tries.
+	const distance = (a: Colour, b: Colour) => Math.hypot(a.lab[0] - b.lab[0], a.lab[1] - b.lab[1], a.lab[2] - b.lab[2]);
+	function random() {
+		let c = draw();
+		for (let i = 0; current && i < 30 && distance(c, current) < 0.15; i++) c = draw();
+		return c;
+	}
 
 	let current = $state<Colour | null>(null);
 	let text = $state('');

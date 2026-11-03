@@ -36,11 +36,9 @@ function randomTopics(seed: number) {
 	];
 }
 
-const render = (tex: string) => {
-	const out = temml.renderToString(tex, { displayMode: true, throwOnError: true });
-	// Temml's helper classes and inline styles are for its own stylesheet; the page styles maths itself.
-	return out.replace(/ class="[^"]*"/g, '').replace(/ style="[^"]*"/g, '');
-};
+// Temml's classes are kept: its stylesheet (src/lib/synesthesia/temml.css, with the Latin Modern
+// Math font) uses them for spacing, primes and the like.
+const render = (tex: string) => temml.renderToString(tex, { displayMode: true, throwOnError: true });
 
 const more = process.argv[2] === 'more';
 const seed = more ? 1000 + (Math.floor(Date.now() / 1000) % 1000000) : 0;

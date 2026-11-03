@@ -1,4 +1,6 @@
 <script lang="ts">
+	import '#lib/synesthesia/temml.css';
+
 	let { children } = $props();
 </script>
 
