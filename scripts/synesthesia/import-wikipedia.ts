@@ -98,7 +98,8 @@ for (const [cat, langs] of Object.entries(wanted))
 					console.log(`exists  ${cat}  ${l}  ${a.title}`);
 					continue;
 				}
-				const item: NewItem = { category: cat, unit: 'word', lang: l, body: a.text, source: { ...source, article: a.title } };
+				const tags = { genre: cat === 'terminology' ? 'encyclopedia (specialist)' : 'encyclopedia', theme: a.title, era: 'contemporary', form: 'prose' };
+				const item: NewItem = { category: cat, unit: 'word', lang: l, body: a.text, source: { ...source, article: a.title, tags } };
 				added += await add([item]);
 			} catch (e) {
 				console.warn(String(e));

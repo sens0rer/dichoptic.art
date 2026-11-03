@@ -28,15 +28,18 @@ export async function participant(cookies: Cookies): Promise<string> {
 // any category; the reverse test has a page of its own.
 export const CATEGORIES = [
 	{ id: 'texts', kind: 'items', name: 'Texts', description: 'Short passages in Ukrainian and English.' },
+	{ id: 'parallel', kind: 'items', name: 'Parallel texts', description: 'The same passage in different languages.' },
 	{ id: 'terminology', kind: 'items', name: 'Terminology', description: 'Passages on specialist subjects, in Ukrainian and English.' },
 	{ id: 'words', kind: 'items', name: 'Separate words', description: 'Ukrainian and English words without context, from very common to rare.' },
 	{ id: 'pseudowords', kind: 'items', name: 'Made-up words', description: 'English-looking words that do not exist.' },
+	{ id: 'colourwords', kind: 'items', name: 'Colour words', description: 'Colour names, and things that usually have a colour.' },
 	{ id: 'similar', kind: 'items', name: 'Related languages', description: 'Latin, French, German, Belarusian and Polish.' },
 	{ id: 'dissimilar', kind: 'items', name: 'Distant languages', description: 'Arabic, Korean, Japanese, Chinese, Thai and Hebrew.' },
 	{ id: 'alphabets', kind: 'items', name: 'Alphabets', description: 'Letters of English, Ukrainian, Greek and the distant languages.' },
 	{ id: 'numbers', kind: 'items', name: 'Numbers', description: 'Digits, longer numbers and number words.' },
 	{ id: 'time', kind: 'items', name: 'Time', description: 'Weekdays, months, seasons, times of day, dates and clock times.' },
 	{ id: 'maths', kind: 'items', name: 'Maths', description: 'School maths, from arithmetic to simple calculus.' },
+	{ id: 'lyrics', kind: 'items', name: 'Songs', description: 'Well-known Ukrainian and English songs, as words.' },
 	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one and colour its lyrics.' },
 	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.' },
 	{ id: 'reverse', kind: 'reverse', name: 'Reverse test', description: 'A colour is shown; write something that has that colour.' }
@@ -139,7 +142,7 @@ export async function activeAnswers(attemptId: string) {
 	const undone = new Set(rows.filter((r) => r.kind === 'retract').map((r) => r.supersedes));
 	return rows
 		.filter((r) => r.kind !== 'retract' && !undone.has(r.clientId))
-		.map((r) => ({ clientId: r.clientId, kind: r.kind as 'colour' | 'none' | 'note', start: r.start!, end: r.end!, hasNote: !!r.note }));
+		.map((r) => ({ clientId: r.clientId, kind: r.kind as 'colour' | 'none' | 'note' | 'flag', start: r.start!, end: r.end!, note: r.note }));
 }
 
 // An item is finished once every unit is covered by a colour or "no colour" answer. Undoing an
@@ -152,7 +155,7 @@ export async function refreshFinished(attemptId: string) {
 		.where(eq(synAttempts.id, attemptId))
 		.then((r) => r[0]);
 	if (!row) return false;
-	const spans: Span[] = (await activeAnswers(attemptId)).filter((a) => a.kind !== 'note');
+	const spans: Span[] = (await activeAnswers(attemptId)).filter((a) => a.kind === 'colour' || a.kind === 'none');
 	const done = allCovered(parse(row.body, row.unit as UnitKind, row.lang), spans);
 	if (done !== !!row.finishedAt)
 		await db.update(synAttempts).set({ finishedAt: done ? new Date() : null }).where(eq(synAttempts.id, attemptId));

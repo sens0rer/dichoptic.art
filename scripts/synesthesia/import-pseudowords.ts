@@ -75,9 +75,53 @@ for (const w of base)
 	if (/[aeiouy]/.test(w)) for (const { p, at } of clusters(w)) clusterCount.set(`${at}:${p}`, (clusterCount.get(`${at}:${p}`) ?? 0) + 1);
 const pronounceable = (w: string) => clusters(w).every(({ p, at }) => (clusterCount.get(`${at}:${p}`) ?? 0) >= 30);
 
+// Sound-alikes of real words ("brane" for "brain"). Without a pronunciation dictionary for made-up
+// strings this is approximate: try the common English spellings of the same sound, one swap at
+// a time, plus a dropped or added final e and single for doubled letters, and refuse the string
+// if any variant is a real word.
+const SAME_SOUND = [
+	['ane', 'ain'], ['ade', 'aid'], ['ate', 'ait'], ['ale', 'ail'], ['ame', 'aim'], ['ai', 'ay'],
+	['ee', 'ea'], ['ee', 'ie'], ['ea', 'ie'], ['ete', 'eat'], ['eme', 'eam'], ['ene', 'een'],
+	['ight', 'ite'], ['ime', 'yme'], ['i', 'y'], ['oa', 'o'], ['ote', 'oat'], ['one', 'own'], ['oe', 'ow'],
+	['ow', 'ou'], ['oo', 'ue'], ['oo', 'ew'], ['ew', 'ue'], ['ur', 'er'], ['ur', 'ir'], ['er', 'ir'], ['or', 'oar'],
+	['ea', 'e'], ['gu', 'g'], ['ou', 'u'], ['ough', 'uff'], ['ough', 'o'], ['ough', 'ow'],
+	['ph', 'f'], ['ck', 'k'], ['c', 'k'], ['s', 'z'], ['s', 'c'], ['x', 'cks'], ['qu', 'kw'], ['wr', 'r'], ['kn', 'n'], ['gh', '']
+];
+function soundsLikeReal(w: string) {
+	const variants = new Set<string>([w.replace(/e$/, ''), w + 'e', w.replace(/(.)\1/g, '$1')]);
+	for (const [a, b] of SAME_SOUND)
+		for (const [from, to] of [
+			[a, b],
+			[b, a]
+		]) {
+			if (!from) continue;
+			for (let i = w.indexOf(from); i >= 0; i = w.indexOf(from, i + 1)) variants.add(w.slice(0, i) + to + w.slice(i + from.length));
+		}
+	variants.delete(w);
+	return [...variants].some((v) => isReal(v));
+}
+
+// The dictionary lists base forms; a real word plus a common ending ("pined") is real too.
+function isReal(w: string) {
+	if (real.has(w)) return true;
+	const stems = [
+		w.replace(/(s|es)$/, ''),
+		w.replace(/(ed|d)$/, ''),
+		w.replace(/ing$/, ''),
+		w.replace(/ing$/, 'e'),
+		w.replace(/(er|est|ly)$/, ''),
+		w.replace(/(er|est)$/, 'e'),
+		w.replace(/ied$/, 'y'),
+		w.replace(/ies$/, 'y'),
+		w.replace(/([^aeiou])\1(ed|ing|er|est)$/, '$1')
+	];
+	return stems.some((s) => s !== w && s.length > 1 && real.has(s));
+}
+
 // Letter strings close enough to rude words that they read as them.
 const RUDE = /fuck|shit|cunt|dick|cock|piss|slut|whore|nigg|fag|rape|porn|tits|bitch|bastard|wank|twat/;
-const ok = (w: string) => /[aeiouy]/.test(w) && !/(.)\1\1/.test(w) && !real.has(w) && !RUDE.test(w) && pronounceable(w);
+const ok = (w: string) =>
+	/[aeiouy]/.test(w) && !/(.)\1\1/.test(w) && !isReal(w) && !RUDE.test(w) && pronounceable(w) && !soundsLikeReal(w);
 
 // Length bands, shortest to longest.
 const BANDS = [

@@ -277,7 +277,8 @@ export const synAttempts = pgTable(
 );
 
 // Append-only. `client_id` is made on the device, so a resent answer is stored once.
-// 'retract' undoes the answer named in `supersedes`.
+// 'retract' undoes the answer named in `supersedes`. 'flag' marks the whole item (note "knows-song":
+// she knows this song), with no range.
 export const synAnswers = pgTable(
 	'syn_answers',
 	{
@@ -290,7 +291,7 @@ export const synAnswers = pgTable(
 			.notNull()
 			.references(() => synParticipants.id),
 		sessionId: text('session_id').notNull(),
-		kind: text('kind', { enum: ['colour', 'none', 'note', 'retract'] }).notNull(),
+		kind: text('kind', { enum: ['colour', 'none', 'note', 'flag', 'retract'] }).notNull(),
 		// Grapheme range [start, end) in the stimulus body.
 		start: integer('start'),
 		end: integer('end'),

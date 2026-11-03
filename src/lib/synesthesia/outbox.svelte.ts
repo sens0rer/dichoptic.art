@@ -8,7 +8,7 @@ import type { Colour } from './okhsl';
 export interface Answer {
 	clientId: string;
 	attemptId: string;
-	kind: 'colour' | 'none' | 'note' | 'retract';
+	kind: 'colour' | 'none' | 'note' | 'flag' | 'retract';
 	start: number | null;
 	end: number | null;
 	colour: Colour | null;

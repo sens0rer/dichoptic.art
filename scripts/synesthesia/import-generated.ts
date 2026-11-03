@@ -1,4 +1,4 @@
-// Adds the generated and fixed sets: alphabets, numbers and time words.
+// Adds the generated and fixed sets: alphabets, numbers, time words and colour words.
 //   npx tsx scripts/synesthesia/import-generated.ts        (the base set)
 //   npx tsx scripts/synesthesia/import-generated.ts more   (further number and clock-time items)
 import { add, close, rng, type NewItem } from './pool';
@@ -113,6 +113,25 @@ const timeFixed: NewItem[] = [
 	source: src('time words')
 }));
 
+// ---- colour words: controls for ordinary colour association ----
+// Colour names, and things whose meaning has a typical colour. If her colour for "банан" is the
+// colour of bananas, that is association; if it follows the letters instead, that is the
+// synesthetic colour.
+
+const colourFixed: NewItem[] = [
+	['uk', 'Colour names', 'червоний помаранчевий жовтий зелений блакитний синій фіолетовий рожевий коричневий сірий чорний білий бірюзовий бордовий бежевий'],
+	['en', 'Colour names', 'red orange yellow green blue indigo violet purple pink brown grey black white turquoise maroon beige'],
+	['uk', 'Things with a colour', 'сніг трава небо банан кров вугілля апельсин лимон вишня море сонце хмара молоко сажа морква баклажан'],
+	['en', 'Things with a colour', 'snow grass sky banana blood coal tangerine lemon cherry sea sun cloud milk soot carrot aubergine']
+].map(([lang, title, body]) => ({
+	category: 'colourwords',
+	unit: 'word' as const,
+	lang,
+	title,
+	body: body.split(' ').join('   '),
+	source: src('colour words')
+}));
+
 const monthsUk = ['січня', 'лютого', 'березня', 'квітня', 'травня', 'червня', 'липня', 'серпня', 'вересня', 'жовтня', 'листопада', 'грудня'];
 const monthsEn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -134,7 +153,7 @@ const seed = more ? 1000 + (Math.floor(Date.now() / 1000) % 1000000) : 1;
 
 const items: NewItem[] = more
 	? [...numberItems(seed, 3), ...timeItems(seed)]
-	: [...alphabetItems, ...numberFixed, ...numberItems(seed, 3), ...timeFixed, ...timeItems(seed)];
+	: [...alphabetItems, ...numberFixed, ...numberItems(seed, 3), ...timeFixed, ...timeItems(seed), ...colourFixed];
 
 const added = await add(items);
 await close();

@@ -91,7 +91,7 @@ The standard measure for synesthesia is test–retest consistency: the same thin
 
 ### Known languages (English, Ukrainian)
 - Running texts (see "Choosing texts" below).
-- Texts on unfamiliar subjects, with terminology. Subjects picked with her: ones she knows nothing about (candidates: anatomy, organic chemistry, maritime/sailing, heraldry, law, mining).
+- Texts on unfamiliar subjects, with terminology. Subjects chosen for her (decided: chosen by us, not with her): mitochondria, heraldry, ship rigging, EEG, bills of exchange.
 - Separate words without context (sampled from word norms, see below).
 - **Parallel texts**: the same passage in Ukrainian and English. If colours follow meaning they should agree across the two; if they follow letters they will not.
 - **Colour-word controls**: colour names (червоний, red), objects with a typical colour (banana, sky, сніг), and words whose meaning and letters might disagree. This separates synesthetic colour from ordinary association.
@@ -101,7 +101,7 @@ Meaningless but pronounceable English words. Ukrainian is left out: there is no 
 - **Generated the way UniPseudo does it** (New et al., 2023): a letter model learned from real English words (which letter follows each pair of letters, and how often) writes new strings. (The ARC database is only available through a web form, and Wuggy needs Python; this needs neither and makes as many as wanted.)
 - Thrown away: anything that is a real word (the Hunspell en_US dictionary plus the 50 000 most frequent subtitle words, so inflected forms and common names go too), strings with consonant clusters rare in that position in English ("stf-", "md-"), triple letters, and strings close to rude words.
 - 20 per item, five in each length band (3–4, 5–6, 7–8, 9–11 letters), like the separate-words items.
-- Not yet excluded: pseudohomophones (strings that sound like real words, like "brane").
+- Sound-alikes of real words ("brane" for brain) are refused approximately, without a pronunciation dictionary: common English spellings of the same sound are swapped one at a time (ane/ain, ee/ea, ph/f, ea/e, gu/g…), plus a dropped or added final e, single for doubled letters, and common endings (-s, -ed, -ing…); any variant that is a real word rules the string out.
 
 ### Less-known, similar languages
 Latin, French, German, Belarusian, Polish (Latin script but Slavic, close to Ukrainian in vocabulary: familiar words in an unfamiliar spelling).
@@ -126,7 +126,7 @@ Arabic, Korean, Japanese, Chinese, Thai, Hebrew. Right-to-left text (Arabic, Heb
 School maths up to simple calculus: operators and signs, variables, fractions, powers and roots, functions (sin, log), limits, derivatives, integrals, simple equations.
 
 **Properly typeset**, with every symbol selectable:
-- Expressions are written in LaTeX in the stimulus files and converted to **MathML** (with Temml, at build time). Browsers render MathML natively (Chrome, Firefox, Safari incl. iOS), with a maths font chosen in order of preference (STIX Two Math, Cambria Math, Latin Modern Math, then the system's maths font). Not yet bundled with the page, so phones without these fonts use their own maths font.
+- Expressions are written in LaTeX in the stimulus files and converted to **MathML** (with Temml, at build time). Browsers render MathML natively (Chrome, Firefox, Safari incl. iOS), rendered with Temml's Latin Modern stylesheet and the Latin Modern Math font (the standard LaTeX font), served by the site itself, so it looks like LaTeX on every device.
 - MathML is a tree: each symbol (`<mi>` variable, `<mn>` number, `<mo>` operator) is a leaf, and groups (fraction, exponent, root, limit subscript, whole expression) are its parents.
 - Text-style handles do not suit maths: they follow reading order, which jumps between numerator and denominator, sub- and superscripts in ways that do not match what she sees. Maths selection is **spatial and snaps to the structure**:
   - **Tap a symbol** to select it. It gets a **box with four corner handles** around it.
@@ -157,12 +157,12 @@ Goal: a set that is varied in a way we can show, not just by impression.
 
    | Kind | Ukrainian | English |
    |---|---|---|
-   | Lullaby | Ой ходить сон коло вікон (folk) | Hush, Little Baby (traditional) |
+   | Lullaby | Ой ходить сон коло вікон (folk) | Rock-a-bye Baby (traditional) |
    | Carol | Щедрик (folk words) | God Rest Ye Merry, Gentlemen (traditional) |
    | Love song | Ніч яка місячна (Starytsky) | A Red, Red Rose (Burns) |
-   | Lament / ballad | Реве та стогне Дніпр широкий (Shevchenko) | The Water Is Wide (traditional) |
+   | Lament / ballad | Реве та стогне Дніпр широкий (Shevchenko) | Greensleeves (traditional) |
    | Marching / historical | Ой у лузі червона калина (Charnetsky) | When Johnny Comes Marching Home (traditional) |
-   | Work / road song | Розпрягайте, хлопці, коні (folk) | Drunken Sailor (shanty) |
+   | Work / road song | Розпрягайте, хлопці, коні (folk) | Blow the Man Down (shanty) |
    | Children's / nonsense | Танцювала риба з раком (folk) | Twinkle, Twinkle, Little Star (Jane Taylor) |
    | Hymn | Боже великий, єдиний (Konysky) | Amazing Grace (Newton) |
    | Comic | Ой ти, дівчино, з горіха зерня (Franko) | Oh My Darling, Clementine (traditional) |

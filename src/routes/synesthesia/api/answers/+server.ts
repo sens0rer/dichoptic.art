@@ -16,7 +16,7 @@ const colour = z.object({
 const answer = z.object({
 	clientId: z.string().min(8).max(64),
 	attemptId: z.string().max(32),
-	kind: z.enum(['colour', 'none', 'note', 'retract']),
+	kind: z.enum(['colour', 'none', 'note', 'flag', 'retract']),
 	start: z.number().int().min(0).nullable(),
 	end: z.number().int().min(0).nullable(),
 	colour: colour.nullable(),

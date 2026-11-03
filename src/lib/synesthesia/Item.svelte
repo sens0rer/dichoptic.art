@@ -69,9 +69,13 @@
 		marks = [
 			...data.answers.map((a) => ({ clientId: a.clientId, kind: a.kind, start: a.start, end: a.end })),
 			...local
-				.filter((a) => a.kind !== 'retract')
+				.filter((a) => a.kind === 'colour' || a.kind === 'none' || a.kind === 'note')
 				.map((a) => ({ clientId: a.clientId, kind: a.kind as Mark['kind'], start: a.start!, end: a.end! }))
 		].filter((m) => !undone.has(m.clientId));
+		// "I know this song": the server's flag, or an unsent one, unless undone.
+		const unsentFlag = local.filter((a) => a.kind === 'flag').at(-1);
+		if (unsentFlag) knownId = unsentFlag.clientId;
+		if (knownId && undone.has(knownId)) knownId = null;
 
 		if (data.position?.selection) {
 			selection = data.position.selection;
@@ -148,6 +152,30 @@
 		resetPicker();
 	}
 
+	// "I know this song" (song items): ticking records a flag answer, unticking undoes it, so the
+	// history is kept like any other answer.
+	let knownId = $state<string | null>(untrack(() => data.song?.knownId ?? null));
+	function toggleKnown() {
+		const base = {
+			attemptId: data.attempt.id,
+			start: null,
+			end: null,
+			colour: null,
+			answeredAt: new Date().toISOString(),
+			tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+			shownMs: Math.round(performance.now() - shownAt),
+			sincePrevMs: null
+		};
+		if (knownId) {
+			send({ ...base, clientId: uid(), kind: 'retract', note: null, supersedes: knownId });
+			knownId = null;
+		} else {
+			const clientId = uid();
+			send({ ...base, clientId, kind: 'flag', note: 'knows-song', supersedes: null });
+			knownId = clientId;
+		}
+	}
+
 	function samePrevious() {
 		if (!previous) return;
 		({ h, s, l } = previous);
@@ -194,6 +222,9 @@
 		{/if}
 
 		{#if data.stimulus.title}<h1 class="title">{data.stimulus.title}</h1>{/if}
+		{#if data.song}
+			<label class="known"><input type="checkbox" checked={!!knownId} onchange={toggleKnown} /> I know this song</label>
+		{/if}
 		{#if data.stimulus.unit === 'math'}
 			<MathMarker
 				body={data.stimulus.body}
@@ -264,6 +295,18 @@
 		gap: 12px;
 		margin-bottom: 14px;
 		font-size: 0.9rem;
+	}
+	.known {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		margin: 0 0 12px;
+		font-size: 0.9rem;
+		color: var(--syn-text);
+	}
+	.known input {
+		width: 22px;
+		height: 22px;
 	}
 	.title {
 		font-size: 1rem;
