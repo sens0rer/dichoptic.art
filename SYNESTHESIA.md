@@ -98,11 +98,10 @@ The standard measure for synesthesia is test–retest consistency: the same thin
 
 ### Pseudowords (English only)
 Meaningless but pronounceable English words. Ukrainian is left out: there is no ready-made Ukrainian set.
-- **Short words**: the ARC Nonword Database (Rastle et al., 2002), 358k one-syllable English pseudowords, filterable by length and by how word-like they are.
-- **Longer words** (two or more syllables): Wuggy's English module, which makes pseudowords from real English words while keeping their syllable structure.
-- Exclude pseudohomophones (items that sound like real words, like "brane"), unless used as a deliberate group.
-- A quick read-through to drop anything that looks like a name, slang or a rude word.
-- Spread across lengths, roughly matched to the lengths of the real separate words.
+- **Generated the way UniPseudo does it** (New et al., 2023): a letter model learned from real English words (which letter follows each pair of letters, and how often) writes new strings. (The ARC database is only available through a web form, and Wuggy needs Python; this needs neither and makes as many as wanted.)
+- Thrown away: anything that is a real word (the Hunspell en_US dictionary plus the 50 000 most frequent subtitle words, so inflected forms and common names go too), strings with consonant clusters rare in that position in English ("stf-", "md-"), triple letters, and strings close to rude words.
+- 20 per item, five in each length band (3–4, 5–6, 7–8, 9–11 letters), like the separate-words items.
+- Not yet excluded: pseudohomophones (strings that sound like real words, like "brane").
 
 ### Less-known, similar languages
 Latin, French, German, Belarusian, Polish (Latin script but Slavic, close to Ukrainian in vocabulary: familiar words in an unfamiliar spelling).
@@ -127,7 +126,7 @@ Arabic, Korean, Japanese, Chinese, Thai, Hebrew. Right-to-left text (Arabic, Heb
 School maths up to simple calculus: operators and signs, variables, fractions, powers and roots, functions (sin, log), limits, derivatives, integrals, simple equations.
 
 **Properly typeset**, with every symbol selectable:
-- Expressions are written in LaTeX in the stimulus files and converted to **MathML** (with Temml, at build time). Browsers render MathML natively (Chrome, Firefox, Safari incl. iOS), with a fixed maths font (Latin Modern Math or STIX Two) so every session looks the same.
+- Expressions are written in LaTeX in the stimulus files and converted to **MathML** (with Temml, at build time). Browsers render MathML natively (Chrome, Firefox, Safari incl. iOS), with a maths font chosen in order of preference (STIX Two Math, Cambria Math, Latin Modern Math, then the system's maths font). Not yet bundled with the page, so phones without these fonts use their own maths font.
 - MathML is a tree: each symbol (`<mi>` variable, `<mn>` number, `<mo>` operator) is a leaf, and groups (fraction, exponent, root, limit subscript, whole expression) are its parents.
 - Text-style handles do not suit maths: they follow reading order, which jumps between numerator and denominator, sub- and superscripts in ways that do not match what she sees. Maths selection is **spatial and snaps to the structure**:
   - **Tap a symbol** to select it. It gets a **box with four corner handles** around it.
@@ -190,9 +189,9 @@ Every category draws from a source large enough to keep adding items for a long 
 | English texts | Project Gutenberg, en.wikisource, English Wikipedia | 70k+ books; 6M+ articles |
 | Terminology texts | Wikipedia articles from chosen specialist categories, both languages | effectively unlimited |
 | Parallel texts | Wikisource works with existing translations; our own translations; the Universal Declaration of Human Rights (same text in all test languages) | grows as we translate |
-| Separate words (EN) | SUBTLEX-US frequencies + concreteness, valence/arousal and age-of-acquisition norms | 40–70k rated words |
-| Separate words (UK) | frequency lists built from Ukrainian corpora (BRUK, UberText), forms checked with dict_uk / VESUM | tens of thousands of words |
-| Pseudowords (EN) | ARC Nonword Database; Wuggy for longer items | 358k, plus unlimited generated |
+| Separate words (EN) | OpenSubtitles frequencies (FrequencyWords) kept only where the word is a lowercase base form in Hunspell en_US (no names, fragments or inflections) | about 19 000 words |
+| Separate words (UK) | lemma frequencies from the hand-tagged Ukrainian Brown Corpus (BRUK); nouns, verbs, adjectives and adverbs; names excluded by their tag | about 36 000 words |
+| Pseudowords (EN) | generated from English letter statistics, real words removed | unlimited |
 | Similar and dissimilar languages | Tatoeba sentences, Wikipedia and Wikisource in each language, UDHR | thousands to millions of sentences per language |
 | Alphabets | Unicode data for each script | complete by nature; extended by adding scripts |
 | Numbers | generated (digits, lengths, number words) | unlimited |

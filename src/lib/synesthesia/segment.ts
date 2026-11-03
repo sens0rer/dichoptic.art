@@ -2,7 +2,8 @@
 // reader sees as one character: a letter with its accents, a Hangul syllable, a Thai cluster), so
 // a range means the same thing in every script. Shared by the page and the server.
 
-export type UnitKind = 'word' | 'char';
+// 'math': the body is MathML, and each visible symbol (an <mi>, <mn>, <mo> or <mtext>) is one part.
+export type UnitKind = 'word' | 'char' | 'math';
 
 export interface Span {
 	start: number; // grapheme index, inclusive
@@ -24,7 +25,22 @@ export interface Parsed {
 	units: Span[];
 }
 
+// The symbols of MathML, in document order, as their text. The page finds the same elements in
+// the same order (see isMathLeaf), so an index means the same symbol on the server and the page.
+const LEAF = /<(mi|mn|mo|mtext)\b[^>]*>([^<]*)<\/\1>/g;
+const ENTITIES: Record<string, string> = { '&lt;': '<', '&gt;': '>', '&amp;': '&', '&quot;': '"', '&#x27;': "'" };
+const decode = (s: string) => s.replace(/&(lt|gt|amp|quot|#x27);/g, (m) => ENTITIES[m]);
+// Invisible operators (function application, invisible times…) and spacing are not symbols.
+export const isMathLeaf = (text: string) => text.replace(/[⁡-⁤\s]/g, '') !== '';
+
+function parseMath(mathml: string): Parsed {
+	const graphemes = [...mathml.matchAll(LEAF)].map((m) => decode(m[2])).filter(isMathLeaf);
+	const segments = graphemes.map((_, i) => ({ start: i, end: i + 1, word: true }));
+	return { graphemes, segments, segmentOf: graphemes.map((_, i) => i), units: segments.map(({ start, end }) => ({ start, end })) };
+}
+
 export function parse(text: string, kind: UnitKind, lang?: string | null): Parsed {
+	if (kind === 'math') return parseMath(text);
 	const graphemes: string[] = [];
 	// Grapheme index of each UTF-16 offset that starts a grapheme.
 	const gAt = new Map<number, number>();

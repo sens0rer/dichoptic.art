@@ -52,10 +52,13 @@
 					<p>{c.description}</p>
 					<p class="counts">{c.status}</p>
 				</div>
-				<form method="post" action="?/start" use:enhance>
-					<input type="hidden" name="category" value={c.id} />
-					<button class="primary" disabled={!c.startable}>{c.id === 'reverse' ? 'Open' : 'Start'}</button>
-				</form>
+				<div class="go">
+					{#if c.id === 'picks'}<a class="btn" href="/synesthesia/picks">Add a song</a>{/if}
+					<form method="post" action="?/start" use:enhance>
+						<input type="hidden" name="category" value={c.id} />
+						<button class="primary" disabled={!c.startable}>{c.id === 'reverse' ? 'Open' : 'Start'}</button>
+					</form>
+				</div>
 			</li>
 		{/each}
 	</ul>
@@ -158,8 +161,15 @@
 	.cats button {
 		white-space: nowrap;
 	}
-	.cats form {
+	.cats .go {
 		flex: none;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 8px;
+	}
+	.go .btn {
+		white-space: nowrap;
 	}
 	.counts,
 	.muted {

@@ -1,5 +1,5 @@
 <script lang="ts">
-	import type { Parsed } from './segment';
+	import { isMathLeaf, type Parsed } from './segment';
 
 	interface ResultAnswer {
 		kind: 'colour' | 'none' | 'note';
@@ -14,10 +14,19 @@
 	let {
 		parsed,
 		answers,
+		math = null,
 		lang = null,
 		rtl = false,
 		size = 22
-	}: { parsed: Parsed; answers: ResultAnswer[]; lang?: string | null; rtl?: boolean; size?: number } = $props();
+	}: {
+		parsed: Parsed;
+		answers: ResultAnswer[];
+		// For maths items: the MathML, whose symbols are coloured in place.
+		math?: string | null;
+		lang?: string | null;
+		rtl?: boolean;
+		size?: number;
+	} = $props();
 
 	const cover = $derived.by(() => {
 		const best: (ResultAnswer | null)[] = parsed.graphemes.map(() => null);
@@ -45,13 +54,29 @@
 
 	// Dark text on light colours, light text on dark ones.
 	const ink = (a: ResultAnswer) => ((a.lightness ?? 0) > 0.62 ? '#111' : '#fff');
+
+	let mathBox = $state<HTMLElement>();
+	$effect(() => {
+		if (!mathBox) return;
+		const leaves = [...mathBox.querySelectorAll<HTMLElement>('mi, mn, mo, mtext')].filter((e) => isMathLeaf(e.textContent ?? ''));
+		leaves.forEach((leaf, i) => {
+			const a = cover[i];
+			leaf.style.background = a?.kind === 'colour' ? a.hex! : '';
+			leaf.style.color = a?.kind === 'colour' ? ink(a) : '';
+			leaf.classList.toggle('none', a?.kind === 'none');
+		});
+	});
 </script>
 
-<div class="text" {lang} dir={rtl ? 'rtl' : 'ltr'} style="--size: {size}px">
-	{#each runs as r, i (i)}{#if r.a?.kind === 'colour'}<span class="c" style="background: {r.a.hex}; color: {ink(r.a)}"
-				>{r.text}</span
-			>{:else if r.a?.kind === 'none'}<span class="none">{r.text}</span>{:else}{r.text}{/if}{/each}
-</div>
+{#if math}
+	<div class="text math" bind:this={mathBox} style="--size: {size}px">{@html math}</div>
+{:else}
+	<div class="text" {lang} dir={rtl ? 'rtl' : 'ltr'} style="--size: {size}px">
+		{#each runs as r, i (i)}{#if r.a?.kind === 'colour'}<span class="c" style="background: {r.a.hex}; color: {ink(r.a)}"
+					>{r.text}</span
+				>{:else if r.a?.kind === 'none'}<span class="none">{r.text}</span>{:else}{r.text}{/if}{/each}
+	</div>
+{/if}
 
 <style>
 	.text {
@@ -62,6 +87,15 @@
 	}
 	.c {
 		padding: 0.08em 0;
+	}
+	.math :global(math) {
+		font-family: 'STIX Two Math', 'Cambria Math', 'Latin Modern Math', math;
+		margin: 0.5em 0;
+	}
+	/* In maths, "no colour" is a dashed outline: an underline would turn + into ±. */
+	.math :global(.none) {
+		outline: 1.5px dashed rgba(0, 0, 0, 0.55);
+		outline-offset: 1px;
 	}
 	/* "No colour": marked, but nothing to show. */
 	.none {

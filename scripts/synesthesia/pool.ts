@@ -8,7 +8,7 @@ import { stimulusId } from '../../src/lib/synesthesia/stimulus';
 
 export interface NewItem {
 	category: string;
-	unit: 'word' | 'char';
+	unit: 'word' | 'char' | 'math';
 	lang: string | null;
 	title?: string | null;
 	body: string;

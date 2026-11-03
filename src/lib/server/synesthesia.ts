@@ -3,6 +3,7 @@ import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { allCovered, parse, type Span, type UnitKind } from '../synesthesia/segment';
 import { db, synAnswers, synAttempts, synParticipants, synResultViews, synReverse, synSessions, synStimuli } from './db';
 import { newFileId, newId } from './ids';
+import { stimulusId } from '../synesthesia/stimulus';
 
 // Identifies the browser, so answers from anyone else who opens the link can be filtered out
 // later. Scoped to the test pages; the main site never sees it.
@@ -29,16 +30,23 @@ export const CATEGORIES = [
 	{ id: 'texts', kind: 'items', name: 'Texts', description: 'Short passages in Ukrainian and English.' },
 	{ id: 'terminology', kind: 'items', name: 'Terminology', description: 'Passages on specialist subjects, in Ukrainian and English.' },
 	{ id: 'words', kind: 'items', name: 'Separate words', description: 'Ukrainian and English words without context, from very common to rare.' },
+	{ id: 'pseudowords', kind: 'items', name: 'Made-up words', description: 'English-looking words that do not exist.' },
 	{ id: 'similar', kind: 'items', name: 'Related languages', description: 'Latin, French, German, Belarusian and Polish.' },
 	{ id: 'dissimilar', kind: 'items', name: 'Distant languages', description: 'Arabic, Korean, Japanese, Chinese, Thai and Hebrew.' },
 	{ id: 'alphabets', kind: 'items', name: 'Alphabets', description: 'Letters of English, Ukrainian, Greek and the distant languages.' },
 	{ id: 'numbers', kind: 'items', name: 'Numbers', description: 'Digits, longer numbers and number words.' },
 	{ id: 'time', kind: 'items', name: 'Time', description: 'Weekdays, months, seasons, times of day, dates and clock times.' },
+	{ id: 'maths', kind: 'items', name: 'Maths', description: 'School maths, from arithmetic to simple calculus.' },
+	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one, pick the lines, and colour them.' },
 	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.' },
 	{ id: 'reverse', kind: 'reverse', name: 'Reverse test', description: 'A colour is shown; write something that has that colour.' }
 ] as const;
 export type CategoryId = (typeof CATEGORIES)[number]['id'];
 export const category = (id: string) => CATEGORIES.find((c) => c.id === id);
+
+// Song picks belong to whoever added them; every other pool is shared.
+const mine = (pid: string) =>
+	sql`(${synStimuli.category} <> 'picks' OR ${synStimuli.source}->>'participant' = ${pid})`;
 
 // Her time zone, from her latest answer, so "today" means her day.
 async function timeZone(pid: string) {
@@ -92,6 +100,7 @@ export async function startNext(pid: string, cat: CategoryId): Promise<string | 
 			and(
 				eq(synStimuli.category, cat),
 				eq(synStimuli.hidden, false),
+				mine(pid),
 				sql`NOT EXISTS (SELECT 1 FROM ${synAttempts} a WHERE a.stimulus_id = ${synStimuli.id} AND a.participant_id = ${pid})`
 			)
 		)
@@ -167,6 +176,7 @@ export async function counts(pid: string) {
 			count(a.id) FILTER (WHERE a.finished_at IS NULL)::int AS unfinished
 		FROM syn_stimuli s
 		LEFT JOIN syn_attempts a ON a.stimulus_id = s.id AND a.participant_id = ${pid} AND NOT a.retest
+		WHERE (s.category <> 'picks' OR s.source->>'participant' = ${pid})
 		GROUP BY s.category`);
 	return Object.fromEntries(rows.map((r) => [r.category, r]));
 }
@@ -247,6 +257,36 @@ export async function result(pid: string, attemptId: string) {
 	}
 	await db.insert(synResultViews).values({ participantId: pid, stimulusId: row.stimulus.id });
 	return { stimulus: row.stimulus, attempts: withAnswers };
+}
+
+// ---- your songs ----
+
+// Adds a song excerpt she chose as an item of her own and starts it.
+export async function addPick(
+	pid: string,
+	song: { artist: string; track: string; excerpt: string; lang: string; lrclibId: number | null }
+) {
+	const row = {
+		category: 'picks',
+		unit: 'word' as const,
+		lang: song.lang,
+		title: `${song.artist} — ${song.track}`,
+		body: song.excerpt
+	};
+	const id = stimulusId({ ...row, owner: pid });
+	await db
+		.insert(synStimuli)
+		.values({ id, ...row, source: { from: song.lrclibId ? 'lrclib' : 'pasted', participant: pid, lrclibId: song.lrclibId } })
+		.onConflictDoNothing();
+	// The same excerpt added twice opens the attempt already made for it.
+	const [existing] = await db
+		.select({ id: synAttempts.id })
+		.from(synAttempts)
+		.where(and(eq(synAttempts.participantId, pid), eq(synAttempts.stimulusId, id), eq(synAttempts.retest, false)));
+	if (existing) return existing.id;
+	const attemptId = newId();
+	await db.insert(synAttempts).values({ id: attemptId, participantId: pid, stimulusId: id });
+	return attemptId;
 }
 
 // ---- reverse test ----

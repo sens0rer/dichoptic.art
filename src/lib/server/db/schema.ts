@@ -237,7 +237,7 @@ export const synStimuli = pgTable(
 		id: text('id').primaryKey(),
 		category: text('category').notNull(),
 		// What one "part" is when checking that an item is fully marked.
-		unit: text('unit', { enum: ['word', 'char'] }).notNull(),
+		unit: text('unit', { enum: ['word', 'char', 'math'] }).notNull(),
 		lang: text('lang'),
 		title: text('title'),
 		body: text('body').notNull(),

@@ -6,7 +6,7 @@
 
 	const RTL = new Set(['ar', 'he']);
 	const parsed = $derived(parse(data.stimulus.body, data.stimulus.unit as UnitKind, data.stimulus.lang));
-	const size = $derived(data.stimulus.unit === 'char' ? 36 : 22);
+	const size = $derived(data.stimulus.unit === 'char' ? 36 : data.stimulus.unit === 'math' ? 30 : 22);
 	const slice = (start: number, end: number) => parsed.graphemes.slice(start, end).join('');
 	const date = (iso: string) => new Date(iso).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
 </script>
@@ -24,7 +24,14 @@
 		{@const notes = a.answers.filter((n) => n.note)}
 		<section>
 			<h2>{a.retest ? `Retest ${i}` : 'First time'} <span class="muted">· {date(a.finishedAt)}</span></h2>
-			<ResultText {parsed} answers={a.answers} lang={data.stimulus.lang} rtl={RTL.has(data.stimulus.lang ?? '')} {size} />
+			<ResultText
+				{parsed}
+				answers={a.answers}
+				math={data.stimulus.unit === 'math' ? data.stimulus.body : null}
+				lang={data.stimulus.lang}
+				rtl={RTL.has(data.stimulus.lang ?? '')}
+				{size}
+			/>
 			{#if notes.length}
 				<ul class="notes">
 					{#each notes as n, k (k)}
@@ -34,7 +41,7 @@
 			{/if}
 		</section>
 	{/each}
-	<p class="legend muted">Dashed underline: marked as no colour.</p>
+	<p class="legend muted">Dashed underline or outline: marked as no colour.</p>
 </main>
 
 <style>

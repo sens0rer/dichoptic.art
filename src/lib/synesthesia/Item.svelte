@@ -3,6 +3,7 @@
 	import { onMount, untrack } from 'svelte';
 	import type { PageData } from '../../routes/synesthesia/a/[id]/$types';
 	import Marker from './Marker.svelte';
+	import MathMarker from './MathMarker.svelte';
 	import Picker from './Picker.svelte';
 	import { colour as makeColour, css } from './okhsl';
 	import { outbox, pendingFor, send, startOutbox, uid, type Answer } from './outbox.svelte';
@@ -72,7 +73,10 @@
 		} else selection = nextUncovered(parsed, spans, 0);
 
 		addEventListener('scroll', savePositionSoon, { passive: true });
-		return () => removeEventListener('scroll', savePositionSoon);
+		return () => {
+			removeEventListener('scroll', savePositionSoon);
+			clearTimeout(positionTimer);
+		};
 	});
 
 	function answer(kind: Mark['kind']) {
@@ -145,13 +149,15 @@
 
 	// "Continue where you left off": item, scroll and selection, saved on the server.
 	let positionTimer: ReturnType<typeof setTimeout> | undefined;
+	// Fixed for this component: it is created afresh for every item.
+	const attemptId = untrack(() => data.attempt.id);
 	function savePositionSoon() {
 		clearTimeout(positionTimer);
 		positionTimer = setTimeout(() => {
 			void fetch('/synesthesia/api/position', {
 				method: 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ attemptId: data.attempt.id, scroll: Math.round(scrollY), selection })
+				body: JSON.stringify({ attemptId, scroll: Math.round(scrollY), selection })
 			}).catch(() => {});
 		}, 800);
 	}
@@ -181,17 +187,28 @@
 		{/if}
 
 		{#if data.stimulus.title}<h1 class="title">{data.stimulus.title}</h1>{/if}
-		<Marker
-			{parsed}
-			{covered}
-			lang={data.stimulus.lang}
-			rtl={RTL.has(data.stimulus.lang ?? '')}
-			size={data.stimulus.unit === 'char' ? 40 : 22}
-			byLetter={data.stimulus.unit === 'char'}
-			bottomInset={wide ? 0 : panelHeight}
-			disabled={busy}
-			bind:selection
-		/>
+		{#if data.stimulus.unit === 'math'}
+			<MathMarker
+				body={data.stimulus.body}
+				{parsed}
+				{covered}
+				bottomInset={wide ? 0 : panelHeight}
+				disabled={busy}
+				bind:selection
+			/>
+		{:else}
+			<Marker
+				{parsed}
+				{covered}
+				lang={data.stimulus.lang}
+				rtl={RTL.has(data.stimulus.lang ?? '')}
+				size={data.stimulus.unit === 'char' ? 40 : 22}
+				byLetter={data.stimulus.unit === 'char'}
+				bottomInset={wide ? 0 : panelHeight}
+				disabled={busy}
+				bind:selection
+			/>
+		{/if}
 	</main>
 
 	<aside class="panel" bind:clientHeight={panelHeight}>

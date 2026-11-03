@@ -21,6 +21,14 @@ describe('parse', () => {
 		expect(parts).toEqual(['ب', 'ب', 'ب', '1']);
 	});
 
+	it('takes MathML symbols as parts, skipping invisible operators', () => {
+		const mathml =
+			'<math><mrow><mi>sin</mi><mo>⁡</mo><mspace width="0.1667em"></mspace><mi>x</mi><mo>&lt;</mo><mfrac><mn>1</mn><mn>2</mn></mfrac></mrow></math>';
+		const p = parse(mathml, 'math');
+		expect(p.graphemes).toEqual(['sin', 'x', '<', '1', '2']);
+		expect(p.units).toHaveLength(5);
+	});
+
 	it('finds words in Thai, which has no spaces', () => {
 		const p = parse('สวัสดีครับ', 'word', 'th');
 		expect(p.units.length).toBeGreaterThan(1);
