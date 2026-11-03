@@ -38,14 +38,14 @@ Every pool is filled by a script, safe to run again (existing items are skipped)
 
 | Category | Script | Source | Items on production |
 |---|---|---|---|
-| Texts | `import-wikipedia.ts`, `import-texts.ts` | Wikipedia openings; Gutenberg (Austen, Dickens, Melville, Carroll, Wilde, KJV, Thoreau, US Constitution, Dickinson, Blake); uk.wikisource (Shevchenko, Kotliarevskyi, Lesia Ukrainka, Franko, Nechui-Levytskyi, Kvitka-Osnovianenko, a folk tale, the Constitution); Wikinews; Wikibooks; one recipe written for the tests | 38 |
+| Texts | `import-wikipedia.ts`, `import-texts.ts` | Wikipedia openings; Gutenberg (Austen, Dickens, Melville, Carroll, Wilde, KJV, Thoreau, US Constitution, Dickinson, Blake); uk.wikisource (Shevchenko, Kotliarevskyi, Lesia Ukrainka, Franko, Nechui-Levytskyi, Kvitka-Osnovianenko, a folk tale, the Constitution); Wikinews; Wikibooks; one recipe written for the tests | 35 |
 | Parallel texts | `import-parallel.ts` | UDHR Articles 1, 3, 19 (github.com/eric-muller/udhr) and 3 passages written for the tests, each in Ukrainian and English only | 12 |
-| Terminology | `import-wikipedia.ts` | Wikipedia (mitochondria, heraldry, rigging, EEG, bills of exchange) | 10 |
+| Terminology | `import-wikipedia.ts` | Wikipedia: mitochondria, rigging, bills of exchange in Ukrainian; heraldry, EEG in English | 5 |
 | Separate words | `import-words.ts --bruk <dir> --dic <file>` | Ukrainian Brown Corpus lemma frequencies; English subtitle frequencies filtered by Hunspell en_US base forms | 20 (×20 words) |
 | Made-up words | `import-pseudowords.ts --dic <file>` | Generated from English letter statistics; real words, inflections, sound-alikes, unpronounceable clusters and rude strings removed | 10 (×20) |
-| Colour words | `import-generated.ts` | Fixed lists | 4 |
-| Related / distant languages | `import-wikipedia.ts` | Wikipedia openings (bread, moon, sun…) | 10 / 11 |
-| Alphabets, numbers, time | `import-generated.ts` (`more` adds new numbers and clock times) | Fixed and generated | 19 / 6 / 11 |
+| Colour words | `import-generated.ts` | Fixed lists, split between the languages (no colour or thing in both) | 4 |
+| Related / distant languages | `import-wikipedia.ts` | Wikipedia openings, a different subject for every article (sea, tea, rain, horse, coffee, paper, silk, bamboo…) | 10 / 12 |
+| Alphabets, numbers, time | `import-generated.ts` (`more` adds new numbers and clock times) | Fixed and generated | 19 / 6 / 7 |
 | Maths | `import-maths.ts` (`more` adds random arithmetic and equations) | LaTeX by school topic, rendered to MathML with Temml | 15 |
 | Songs (retired) | `import-lyrics.ts` | Wikisource (and Gutenberg for Burns): nine Ukrainian/English pairs. Retired 3 Nov 2026: off the home page, items hidden, earlier answers kept in results and admin. Do not run the script again | 0 (18 hidden) |
 | Your songs | added by her on `/synesthesia/picks` | LRCLIB search or pasted lyrics; visible only to her | — |
@@ -75,7 +75,8 @@ Recorded in SYNESTHESIA.md as they were made; the main ones:
 - Made-up words are generated (UniPseudo's method) rather than taken from ARC/Wuggy (ARC is a web form only, Wuggy needs Python); sound-alikes are filtered approximately.
 - English separate words use subtitle frequencies filtered by a dictionary, Ukrainian ones the BRUK corpus, rather than rating norms.
 - Three English songs replaced (Rock-a-bye Baby, Greensleeves, Blow the Man Down) because Wikisource lacks the planned ones in usable form.
-- Retests are a category that re-serves her finished items, not a separate three-repeat module. Hidden items are not retested.
+- Retests are a category that re-serves her finished items, not a separate three-repeat module. Hidden items are not retested. The category is hidden from the home page for now (`hidden: true` in `CATEGORIES`; remove it to bring Retests back).
+- No translations outside Parallel texts: every Wikipedia subject, word list and colour or number word is in one language only. Time: days of the week and seasons in Ukrainian, months and times of day in English, different dates in each.
 - The preloaded Songs category is retired (only her own songs remain); the "I know this song" flag belonged to it and no longer shows on new items.
 - A song she adds uses the whole lyrics.
 

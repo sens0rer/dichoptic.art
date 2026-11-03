@@ -8,6 +8,7 @@ A test suite for one participant (a friend) to record her synesthetic colour exp
 - **Nothing is overwritten.** Every confirmed answer is a new record with timecodes; a correction is a new record that supersedes the old one. History is the data.
 - **Blind while answering.** While she is marking an item (first time or retest), her earlier answers are never shown. Results does show them; result views are logged.
 - **Phone first-class.** Everything works by touch on a small screen and is tested on real phones (see Mobile).
+- **No translations outside Parallel texts.** A meaning appears in one language only (one Wikipedia subject, one weekday list, one colour name); the same content in two languages is what Parallel texts are for.
 - **Large, growing pools.** Every category draws from a source big enough to keep adding tests later (see Stimulus pools). Items never change once added, so a result always points at the exact text that was shown.
 
 ## Flow
@@ -18,7 +19,7 @@ A test suite for one participant (a friend) to record her synesthetic colour exp
 - **Finished:** when every part of the item is covered by an answer (a colour or "no colour"), it moves to **Results** and a "Next" button offers a new item. It does not jump away by itself, so she can still add overlapping answers (a sentence over words she already marked) before moving on.
 - **Skip / leave partly done:** "Skip" (or switching category) puts the item in **Unfinished**, with whatever she has marked so far. Unfinished has its own list, per category and overall, and she can reopen any item there and continue.
 - "Every part covered" means every word for texts and word lists, and every character for alphabets, numbers and single items; maths counts every symbol. Answers on larger spans (a whole sentence) cover the words inside them.
-- **Retests are one more category** (see Retests below): it hands her items she has already finished, at random, to go through again. She uses it whenever she likes; there is no fixed schedule.
+- _Hidden from the home page for now (3 Nov 2026); the code is kept._ **Retests are one more category** (see Retests below): it hands her items she has already finished, at random, to go through again. She uses it whenever she likes; there is no fixed schedule.
 
 ## Mobile
 A phone is a first-class device, not a fallback: everything works by touch on a small screen, and is tested on a real iPhone (Safari) and Android phone (Chrome), not only in a resized desktop browser.
@@ -120,7 +121,7 @@ Arabic, Korean, Japanese, Chinese, Thai, Hebrew. Right-to-left text (Arabic, Heb
 - Upper and lower case shown separately where they exist.
 
 ### Numbers
-- Digits 0–9, multi-digit numbers, number words (in Ukrainian and English).
+- Digits 0–9, multi-digit numbers, number words (nought to ten in Ukrainian, the tens and up in English, so no number is in both).
 
 ### Mathematics
 School maths up to simple calculus: operators and signs, variables, fractions, powers and roots, functions (sin, log), limits, derivatives, integrals, simple equations.

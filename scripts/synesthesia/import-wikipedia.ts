@@ -4,31 +4,32 @@
 // Items are content-addressed, so running it twice adds nothing twice.
 import { add, close, hasSource, pause, type NewItem } from './pool';
 
-// Same subjects across languages where possible, so languages can be compared on similar content.
+// Every subject in one language only, across all categories: the same meaning in two languages
+// belongs to Parallel texts.
 const STARTER: Record<string, Record<string, string[]>> = {
 	texts: {
-		uk: ['Бджола медоносна', 'Полярне сяйво', 'Хліб', 'Карпати', 'Бандура', 'Вишиванка'],
-		en: ['Western honey bee', 'Aurora', 'Bread', 'Lighthouse', 'Origami', 'Tide']
+		uk: ['Полярне сяйво', 'Хліб', 'Карпати', 'Бандура', 'Вишиванка'],
+		en: ['Western honey bee', 'Lighthouse', 'Origami', 'Tide']
 	},
 	// Specialist subjects, chosen for terms she is unlikely to know.
 	terminology: {
-		uk: ['Мітохондрія', 'Геральдика', 'Такелаж', 'Електроенцефалографія', 'Вексель'],
-		en: ['Mitochondrion', 'Heraldry', 'Rigging', 'Electroencephalography', 'Bill of exchange']
+		uk: ['Мітохондрія', 'Такелаж', 'Вексель'],
+		en: ['Heraldry', 'Electroencephalography']
 	},
 	similar: {
-		la: ['Panis', 'Luna'],
-		fr: ['Pain', 'Lune'],
-		de: ['Brot', 'Mond'],
-		be: ['Хлеб', 'Сонца'],
-		pl: ['Chleb', 'Księżyc']
+		la: ['Mare', 'Rosa'],
+		fr: ['Thé', 'Montagne'],
+		de: ['Regen', 'Wald'],
+		be: ['Сонца', 'Конь свойскі'],
+		pl: ['Kot domowy', 'Rzeka']
 	},
 	dissimilar: {
-		ar: ['خبز', 'قمر'],
-		ko: ['빵', '달'],
-		ja: ['パン', '月'],
-		zh: ['面包', '月球'],
-		th: ['ขนมปัง', 'ดวงจันทร์'],
-		he: ['לחם', 'הירח']
+		ar: ['قمر', 'قهوة'],
+		ko: ['종이', '바람'],
+		ja: ['絹', '桜'],
+		zh: ['竹', '铁'],
+		th: ['ช้าง', 'มะม่วง'],
+		he: ['נתרן כלורי', 'שלג']
 	}
 };
 

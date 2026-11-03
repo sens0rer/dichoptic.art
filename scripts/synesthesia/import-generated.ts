@@ -80,7 +80,8 @@ const numberFixed: NewItem[] = [
 		unit: 'word',
 		lang: 'uk',
 		title: 'Number words',
-		body: 'нуль один два три чотири п’ять шість сім вісім дев’ять десять\nдвадцять тридцять сорок п’ятдесят шістдесят сімдесят вісімдесят дев’яносто сто тисяча мільйон',
+		// Each number in one language only: nought to ten in Ukrainian, the tens and up in English.
+		body: 'нуль один два три чотири п’ять шість сім вісім дев’ять десять',
 		source: src('number words')
 	},
 	{
@@ -88,21 +89,19 @@ const numberFixed: NewItem[] = [
 		unit: 'word',
 		lang: 'en',
 		title: 'Number words',
-		body: 'zero one two three four five six seven eight nine ten\ntwenty thirty forty fifty sixty seventy eighty ninety hundred thousand million',
+		body: 'twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million',
 		source: src('number words')
 	}
 ];
 
 // ---- time ----
 
+// Each set in one language only (the same words in both would be a translation, which belongs to
+// Parallel texts).
 const timeFixed: NewItem[] = [
 	['uk', 'Days of the week', 'понеділок вівторок середа четвер п’ятниця субота неділя'],
-	['en', 'Days of the week', 'Monday Tuesday Wednesday Thursday Friday Saturday Sunday'],
-	['uk', 'Months', 'січень лютий березень квітень травень червень липень серпень вересень жовтень листопад грудень'],
 	['en', 'Months', 'January February March April May June July August September October November December'],
 	['uk', 'Seasons', 'зима весна літо осінь'],
-	['en', 'Seasons', 'winter spring summer autumn'],
-	['uk', 'Times of day', 'світанок ранок полудень день вечір сутінки ніч опівніч'],
 	['en', 'Times of day', 'dawn morning noon afternoon evening dusk night midnight']
 ].map(([lang, title, body]) => ({
 	category: 'time',
@@ -116,13 +115,13 @@ const timeFixed: NewItem[] = [
 // ---- colour words: controls for ordinary colour association ----
 // Colour names, and things whose meaning has a typical colour. If her colour for "банан" is the
 // colour of bananas, that is association; if it follows the letters instead, that is the
-// synesthetic colour.
+// synesthetic colour. Each meaning in one language only: the lists are split between the two.
 
 const colourFixed: NewItem[] = [
-	['uk', 'Colour names', 'червоний помаранчевий жовтий зелений блакитний синій фіолетовий рожевий коричневий сірий чорний білий бірюзовий бордовий бежевий'],
-	['en', 'Colour names', 'red orange yellow green blue indigo violet purple pink brown grey black white turquoise maroon beige'],
-	['uk', 'Things with a colour', 'сніг трава небо банан кров вугілля апельсин лимон вишня море сонце хмара молоко сажа морква баклажан'],
-	['en', 'Things with a colour', 'snow grass sky banana blood coal tangerine lemon cherry sea sun cloud milk soot carrot aubergine']
+	['uk', 'Colour names', 'червоний жовтий блакитний фіолетовий коричневий чорний бордовий бежевий'],
+	['en', 'Colour names', 'orange green blue indigo pink grey white turquoise'],
+	['uk', 'Things with a colour', 'сніг небо кров апельсин вишня сонце молоко морква'],
+	['en', 'Things with a colour', 'grass banana coal lemon sea cloud soot aubergine']
 ].map(([lang, title, body]) => ({
 	category: 'colourwords',
 	unit: 'word' as const,
@@ -139,11 +138,14 @@ function timeItems(seed: number): NewItem[] {
 	const rnd = rng(seed);
 	const pick = (n: number) => Math.floor(rnd() * n);
 	const clock = Array.from({ length: 10 }, () => `${String(pick(24)).padStart(2, '0')}:${String(pick(4) * 15).padStart(2, '0')}`);
-	const dates = Array.from({ length: 8 }, () => [1 + pick(28), pick(12)] as const);
+	// Different dates in each language, so neither list is a translation of the other.
+	const dates = Array.from({ length: 16 }, () => [1 + pick(28), pick(12)] as const);
+	const uk = dates.slice(0, 8);
+	const en = dates.slice(8).filter(([d, m]) => !uk.some(([d2, m2]) => d2 === d && m2 === m));
 	return [
 		{ category: 'time', unit: 'word', lang: null, title: 'Clock times', body: spaced(clock.join(' ')), source: { ...src('clock times'), seed } },
-		{ category: 'time', unit: 'word', lang: 'uk', title: 'Dates', body: dates.map(([d, m]) => `${d} ${monthsUk[m]}`).join('\n'), source: { ...src('dates'), seed } },
-		{ category: 'time', unit: 'word', lang: 'en', title: 'Dates', body: dates.map(([d, m]) => `${monthsEn[m]} ${d}`).join('\n'), source: { ...src('dates'), seed } }
+		{ category: 'time', unit: 'word', lang: 'uk', title: 'Dates', body: uk.map(([d, m]) => `${d} ${monthsUk[m]}`).join('\n'), source: { ...src('dates'), seed } },
+		{ category: 'time', unit: 'word', lang: 'en', title: 'Dates', body: en.map(([d, m]) => `${monthsEn[m]} ${d}`).join('\n'), source: { ...src('dates'), seed } }
 	];
 }
 

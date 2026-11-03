@@ -28,8 +28,8 @@ export async function participant(cookies: Cookies): Promise<string> {
 export const enrol = (pid: string) => db.insert(synParticipants).values({ id: pid }).onConflictDoNothing();
 
 // "items" categories hand out items from their own pool; Retests re-serves finished items from
-// any category; the reverse test has a page of its own. A retired category is off the home page
-// (its items are hidden) but stays in results and admin, so earlier answers keep their place.
+// any category; the reverse test has a page of its own. A hidden category is off the home page but
+// stays in results and admin, so earlier answers keep their place (Songs' items are also hidden).
 export const CATEGORIES = [
 	{ id: 'texts', kind: 'items', name: 'Texts', description: 'Short passages in Ukrainian and English.' },
 	{ id: 'parallel', kind: 'items', name: 'Parallel texts', description: 'The same passage in Ukrainian and in English.' },
@@ -43,9 +43,9 @@ export const CATEGORIES = [
 	{ id: 'numbers', kind: 'items', name: 'Numbers', description: 'Digits, longer numbers and number words.' },
 	{ id: 'time', kind: 'items', name: 'Time', description: 'Weekdays, months, seasons, times of day, dates and clock times.' },
 	{ id: 'maths', kind: 'items', name: 'Maths', description: 'School maths, from arithmetic to simple calculus.' },
-	{ id: 'lyrics', kind: 'items', name: 'Songs', description: 'Well-known Ukrainian and English songs, as words.', retired: true },
+	{ id: 'lyrics', kind: 'items', name: 'Songs', description: 'Well-known Ukrainian and English songs, as words.', hidden: true },
 	{ id: 'picks', kind: 'items', name: 'Your songs', description: 'Songs you choose: add one and colour its lyrics.' },
-	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.' },
+	{ id: 'retests', kind: 'retests', name: 'Retests', description: 'Items you have finished, again, in random order.', hidden: true },
 	{ id: 'reverse', kind: 'reverse', name: 'Reverse test', description: 'A colour is shown; write something that has that colour.' }
 ] as const;
 export type CategoryId = (typeof CATEGORIES)[number]['id'];
