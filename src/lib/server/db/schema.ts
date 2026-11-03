@@ -218,3 +218,92 @@ export const uploadLog = pgTable(
 	},
 	(t) => [index().on(t.clientIp, t.createdAt)]
 );
+
+// /synesthesia: a test suite for one participant, unlisted. Tables are separate from the
+// main site's and share nothing with it.
+
+// One row per browser (the participant cookie). `position` is where she left off.
+export const synParticipants = pgTable('syn_participants', {
+	id: text('id').primaryKey(),
+	position: jsonb('position'),
+	...timestamps()
+});
+
+// The pools. Rows are never updated: the id is a hash of the content, so an answer always
+// points at the exact text that was shown. `hidden` only keeps an item out of new rounds.
+export const synStimuli = pgTable(
+	'syn_stimuli',
+	{
+		id: text('id').primaryKey(),
+		category: text('category').notNull(),
+		// What one "part" is when checking that an item is fully marked.
+		unit: text('unit', { enum: ['word', 'char'] }).notNull(),
+		lang: text('lang'),
+		title: text('title'),
+		body: text('body').notNull(),
+		source: jsonb('source'),
+		hidden: boolean('hidden').notNull().default(false),
+		...timestamps()
+	},
+	(t) => [index().on(t.category)]
+);
+
+// One visit (a page load in one tab), with the device it ran on.
+export const synSessions = pgTable('syn_sessions', {
+	id: text('id').primaryKey(),
+	participantId: text('participant_id')
+		.notNull()
+		.references(() => synParticipants.id),
+	device: jsonb('device'),
+	...timestamps()
+});
+
+// One go at one item. A retest is a new attempt at the same item.
+export const synAttempts = pgTable(
+	'syn_attempts',
+	{
+		id: text('id').primaryKey(),
+		participantId: text('participant_id')
+			.notNull()
+			.references(() => synParticipants.id),
+		stimulusId: text('stimulus_id')
+			.notNull()
+			.references(() => synStimuli.id),
+		retest: boolean('retest').notNull().default(false),
+		finishedAt: timestamp('finished_at', { withTimezone: true }),
+		...timestamps()
+	},
+	(t) => [index().on(t.participantId, t.stimulusId)]
+);
+
+// Append-only. `client_id` is made on the device, so a resent answer is stored once.
+// 'retract' undoes the answer named in `supersedes`.
+export const synAnswers = pgTable(
+	'syn_answers',
+	{
+		id: bigserial('id', { mode: 'number' }).primaryKey(),
+		clientId: text('client_id').notNull().unique(),
+		attemptId: text('attempt_id')
+			.notNull()
+			.references(() => synAttempts.id),
+		participantId: text('participant_id')
+			.notNull()
+			.references(() => synParticipants.id),
+		sessionId: text('session_id').notNull(),
+		kind: text('kind', { enum: ['colour', 'none', 'note', 'retract'] }).notNull(),
+		// Grapheme range [start, end) in the stimulus body.
+		start: integer('start'),
+		end: integer('end'),
+		colour: jsonb('colour'),
+		note: text('note'),
+		supersedes: text('supersedes'),
+		// Device clock when she confirmed, its time zone, and ms since the item was shown and
+		// since her previous answer (from performance.now(), immune to clock changes).
+		answeredAt: timestamp('answered_at', { withTimezone: true }).notNull(),
+		tz: text('tz'),
+		shownMs: integer('shown_ms'),
+		sincePrevMs: integer('since_prev_ms'),
+		receivedAt: timestamp('received_at', { withTimezone: true }).notNull().defaultNow()
+	},
+	(t) => [index().on(t.attemptId)]
+);

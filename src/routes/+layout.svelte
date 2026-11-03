@@ -13,7 +13,7 @@
 	// While the banner is up, the page gets bottom padding of the same height so nothing is hidden behind it.
 	let bannerHeight = $state(0);
 	$effect(() => {
-		const open = needsPrompt();
+		const open = needsPrompt() && !bare;
 		document.documentElement.style.setProperty('--consent-h', open ? `${bannerHeight}px` : '0px');
 	});
 
@@ -24,6 +24,9 @@
 	];
 	const here = (href: string) =>
 		href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
+
+	// The unlisted test pages have their own layout: no site header, no cookie notice.
+	const bare = $derived(page.url.pathname.startsWith('/synesthesia'));
 </script>
 
 <svelte:head>
@@ -31,6 +34,7 @@
 	<title>dichoptic.art</title>
 </svelte:head>
 
+{#if !bare}
 <header>
 	<a class="brand" href="/">dichoptic<span>.art</span></a>
 	<nav>
@@ -39,8 +43,9 @@
 		{/each}
 	</nav>
 </header>
+{/if}
 
-{#if needsPrompt()}
+{#if needsPrompt() && !bare}
 	<div class="consent" role="dialog" aria-label="Cookie notice" bind:clientHeight={bannerHeight}>
 		{#if consent.choice === 'denied'}
 			<p>
