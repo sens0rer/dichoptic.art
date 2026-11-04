@@ -27,9 +27,9 @@ An unlisted part of dichoptic.art for one participant (a friend) to record synes
 - **Participant**: a random id in a cookie (`syn_participant`, path `/synesthesia`, httpOnly, 10 years). A browser becomes a participant row only with its first answer; visiting or starting items records nothing. Answers from anyone else are filtered out by this id (the export page lists participants with their devices).
 - **Items** (`syn_stimuli`) never change: the id is a hash of the content (and, for her songs, her id). Removing an item means hiding it (admin item page), which only keeps it out of new rounds.
 - **Attempts** (`syn_attempts`): one go at one item; a retest is a new attempt at the same item. An attempt is finished once every part (word, letter or maths symbol, by the item's `unit`) is covered by a colour or "no colour" answer.
-- **Answers** (`syn_answers`) are append-only: `colour`, `none`, `note`, `flag` ("I know this song"), and `retract` (undo of another answer). Each has the range (graphemes, or maths symbol indices), the colour (Okhsl + hex + Oklab), the note, and timecodes: device clock and time zone, ms since the item was shown, ms since the previous answer, server receive time. The device keeps unsent answers (`localStorage`) and resends until the server has them; a resent answer is stored once (client id).
+- **Answers** (`syn_answers`) are append-only: `colour` (one or more colours: the first, plus `more` for the rest), `none`, `note`, `flag` ("I know this song"), and `retract` (undo of another answer). Each has the range (graphemes, or maths symbol indices), the colour (Okhsl + hex + Oklab), the note, and timecodes: device clock and time zone, ms since the item was shown, ms since the previous answer, server receive time. The device keeps unsent answers (`localStorage`) and resends until the server has them; a resent answer is stored once (client id).
 - **Sessions** (`syn_sessions`): one per tab visit, with device info and the screen checklist answers.
-- **Blind while answering**: the marking page only learns which parts are done, never their colours. Results shows colours; each view is logged (`syn_result_views`).
+- **Blind while answering**: the marking page only learns which parts are done, never their colours. Results shows colours, for finished items and for unfinished ones with at least one answer; each view is logged (`syn_result_views`).
 - **Reverse test** (`syn_reverse`): random colours (saturation leaning vivid, lightness leaning middle, each new one clearly different from the last); she writes something with that colour or "nothing".
 
 ## Content
@@ -66,7 +66,7 @@ Pitfalls the scripts already guard against (worth knowing when adding sources): 
 ## Admin and data
 
 - `/synesthesia/admin`: categories with counts; item lists with source and tags (filter by language, show hidden); item pages with the text as shown, use per participant, every participant's answers drawn in colour, and hide/unhide. `/synesthesia/admin/participant/<id>`: one participant's answered items and reverse-test answers.
-- `/synesthesia/export`: `answers.csv` (one row per answer, with the text covered, colour in hex/Okhsl/Oklab, all timecodes, and whether it was undone), `reverse.csv`, `all.json` (everything, including sessions, devices, items and result views), and the participant list.
+- `/synesthesia/export`: `answers.csv` (one row per answer, with the text covered, colour in hex/Okhsl/Oklab, further colours in the `more_*` columns (space-separated, one value per colour), all timecodes, and whether it was undone), `reverse.csv`, `all.json` (everything, including sessions, devices, items and result views), and the participant list.
 - Consistency analysis is meant to happen on the export (compare attempts at the same item per word/letter/symbol in Oklab); nothing is scored on the site.
 
 ## Changes from the plan

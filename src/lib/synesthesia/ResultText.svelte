@@ -7,6 +7,7 @@
 		end: number;
 		hex: string | null;
 		lightness: number | null;
+		more?: { hex: string; lightness: number }[];
 	}
 
 	// A finished item drawn in her colours. Where answers overlap (a sentence and a word in it),
@@ -53,7 +54,18 @@
 	});
 
 	// Dark text on light colours, light text on dark ones.
-	const ink = (a: ResultAnswer) => ((a.lightness ?? 0) > 0.62 ? '#111' : '#fff');
+	// With several colours, by their average lightness.
+	const colours = (a: ResultAnswer) => [{ hex: a.hex!, lightness: a.lightness ?? 0 }, ...(a.more ?? [])];
+	const ink = (a: ResultAnswer) => {
+		const cs = colours(a);
+		return cs.reduce((t, c) => t + c.lightness, 0) / cs.length > 0.62 ? '#111' : '#fff';
+	};
+	// Several colours are drawn as equal stripes, left to right.
+	const paint = (a: ResultAnswer) => {
+		const cs = colours(a);
+		if (cs.length === 1) return cs[0].hex;
+		return `linear-gradient(to right, ${cs.map((c, i) => `${c.hex} ${(i * 100) / cs.length}% ${((i + 1) * 100) / cs.length}%`).join(', ')})`;
+	};
 
 	let mathBox = $state<HTMLElement>();
 	// A root's √ and a fraction's bar are not elements of their own: their colour is a box drawn behind them.
@@ -67,10 +79,10 @@
 			if (isDrawn(leaf)) {
 				const r = drawnRect(leaf);
 				if (a && a.kind !== 'note')
-					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, hex: a.kind === 'colour' ? a.hex : null });
+					marks.push({ x: r.left - b.left, y: r.top - b.top, w: r.right - r.left, h: r.bottom - r.top, hex: a.kind === 'colour' ? paint(a) : null });
 				return;
 			}
-			leaf.style.background = a?.kind === 'colour' ? a.hex! : '';
+			leaf.style.background = a?.kind === 'colour' ? paint(a) : '';
 			leaf.style.color = a?.kind === 'colour' ? ink(a) : '';
 			leaf.classList.toggle('none', a?.kind === 'none');
 		});
@@ -91,7 +103,7 @@
 	<div class="text math" bind:this={mathBox} style="--size: {size}px">{@html math}{#each radicals as m, i (i)}<div class="radical" class:none={!m.hex} style="left: {m.x}px; top: {m.y}px; width: {m.w}px; height: {m.h}px; background: {m.hex ?? 'transparent'}"></div>{/each}</div>
 {:else}
 	<div class="text" {lang} dir={rtl ? 'rtl' : 'ltr'} style="--size: {size}px">
-		{#each runs as r, i (i)}{#if r.a?.kind === 'colour'}<span class="c" style="background: {r.a.hex}; color: {ink(r.a)}"
+		{#each runs as r, i (i)}{#if r.a?.kind === 'colour'}<span class="c" style="background: {paint(r.a)}; color: {ink(r.a)}"
 					>{r.text}</span
 				>{:else if r.a?.kind === 'none'}<span class="none">{r.text}</span>{:else}{r.text}{/if}{/each}
 	</div>

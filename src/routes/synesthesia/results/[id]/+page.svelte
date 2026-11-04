@@ -23,7 +23,11 @@
 	{#each data.attempts as a, i (a.id)}
 		{@const notes = a.answers.filter((n) => n.note)}
 		<section>
-			<h2>{a.retest ? `Retest ${i}` : 'First time'} <span class="muted">· {date(a.finishedAt)}</span></h2>
+			<h2>
+				{a.retest ? `Retest ${i}` : 'First time'}
+				{#if a.finishedAt}<span class="muted">· {date(a.finishedAt)}</span>
+				{:else}<span class="muted">· unfinished ·</span> <a href="/synesthesia/a/{a.id}">Continue</a>{/if}
+			</h2>
 			<ResultText
 				{parsed}
 				answers={a.answers}

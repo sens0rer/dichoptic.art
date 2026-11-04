@@ -14,6 +14,8 @@ export interface Colour {
 	hex: string;
 	// Oklab, for perceptual distances in analysis
 	lab: Lab;
+	// Further colours, when she gave the part more than one (two-tone letters and the like).
+	more?: Colour[];
 }
 
 const cbrt = Math.cbrt;

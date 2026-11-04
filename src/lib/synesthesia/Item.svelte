@@ -38,7 +38,13 @@
 	let note = $state('');
 	let noteOpen = $state(false);
 	let busy = $state(false);
-	let previous = $state<{ h: number; s: number; l: number } | null>(null);
+	type Hsl = { h: number; s: number; l: number };
+	// "Add colour" sets the picker's colour aside here and starts the picker afresh for the next one;
+	// Confirm saves these and the picker's colour.
+	let added = $state<Hsl[]>([]);
+	let previous = $state<{ added: Hsl[]; colour: Hsl } | null>(null);
+	// Every colour Confirm would save, in order.
+	const all = $derived([...added, shown]);
 	// Answers made on this visit, newest last, for Undo.
 	let history = $state<Mark[]>([]);
 
@@ -52,9 +58,27 @@
 		s = 1;
 		l = 0.5;
 		fresh = true;
+		added = [];
 		note = '';
 		noteOpen = false;
 	}
+
+	// More than one colour for one part: the picker's colour is set aside, and the picker starts
+	// afresh (grey until touched) for the next.
+	function addColour() {
+		added = [...added, { ...shown }];
+		h = 0;
+		s = 1;
+		l = 0.5;
+		fresh = true;
+	}
+	const removeColour = (i: number) => (added = added.filter((_, k) => k !== i));
+
+	// Equal stripes, left to right, for a set of colours.
+	const stripes = (cs: Hsl[]) =>
+		cs.length === 1
+			? css(cs[0].h, cs[0].s, cs[0].l)
+			: `linear-gradient(to right, ${cs.map((c, i) => `${css(c.h, c.s, c.l)} ${(i * 100) / cs.length}% ${((i + 1) * 100) / cs.length}%`).join(', ')})`;
 
 	onMount(() => {
 		shownAt = performance.now();
@@ -98,7 +122,12 @@
 			kind,
 			start: selection.start,
 			end: selection.end,
-			colour: kind === 'colour' ? makeColour(shown.h, shown.s, shown.l) : null,
+			colour:
+				kind !== 'colour'
+					? null
+					: all.length > 1
+						? { ...makeColour(all[0].h, all[0].s, all[0].l), more: all.slice(1).map((c) => makeColour(c.h, c.s, c.l)) }
+						: makeColour(shown.h, shown.s, shown.l),
 			note: note.trim() || null,
 			supersedes: null,
 			answeredAt: new Date().toISOString(),
@@ -111,7 +140,7 @@
 		const mark = { clientId: a.clientId, kind, start: a.start!, end: a.end! };
 		marks = [...marks, mark];
 		history = [...history, mark];
-		if (kind === 'colour') previous = { ...shown };
+		if (kind === 'colour') previous = { added, colour: { ...shown } };
 		resetPicker();
 		if (kind === 'note') return;
 		advance(selection.end);
@@ -178,7 +207,8 @@
 
 	function samePrevious() {
 		if (!previous) return;
-		({ h, s, l } = previous);
+		({ h, s, l } = previous.colour);
+		added = previous.added;
 		fresh = false;
 	}
 
@@ -262,6 +292,15 @@
 				<span class="label">{finished ? 'All marked' : 'Tap a word to select it'}</span>
 			{/if}
 		</div>
+		{#if added.length}
+			<div class="added">
+				<span class="label">Colours so far (tap to remove), then this one:</span>
+				{#each added as c, i (i)}
+					<button class="chip-colour" style="background: {css(c.h, c.s, c.l)}" onclick={() => removeColour(i)} aria-label="Remove colour {i + 1}"
+					></button>
+				{/each}
+			</div>
+		{/if}
 		<Picker bind:h bind:s bind:l bind:fresh />
 		{#if noteOpen}
 			<div class="note">
@@ -271,9 +310,10 @@
 		{/if}
 		<div class="actions">
 			<button class="primary confirm" onclick={() => answer('colour')} disabled={!selection || busy}>
-				<span class="swatch" style="background: {css(shown.h, shown.s, shown.l)}"></span>Confirm
+				<span class="swatch" style="background: {stripes(all)}"></span>Confirm
 			</button>
 			<button onclick={() => answer('none')} disabled={!selection || busy}>No colour</button>
+			<button onclick={addColour} disabled={!selection || busy || added.length >= 9}>Add colour</button>
 			<button onclick={() => (noteOpen = !noteOpen)} class:on={noteOpen || note}>Note</button>
 			<button onclick={samePrevious} disabled={!previous}>Same as previous</button>
 			<button onclick={undo} disabled={!history.length || busy}>Undo</button>
@@ -395,6 +435,25 @@
 	}
 	button.on {
 		border-color: #111;
+	}
+	.added {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		font-size: 0.8rem;
+	}
+	.added .label {
+		width: 100%;
+	}
+	/* A colour set aside; large enough to tap. */
+	.chip-colour {
+		width: 36px;
+		height: 36px;
+		min-height: 0;
+		padding: 0;
+		border-radius: 50%;
+		border: 2px solid #eee;
 	}
 	.note {
 		display: grid;

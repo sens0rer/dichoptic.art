@@ -189,7 +189,14 @@ export async function counts(pid: string) {
 	return Object.fromEntries(rows.map((r) => [r.category, r]));
 }
 
-export async function attemptsList(pid: string, finished: boolean) {
+// Answers in force on an attempt, in SQL: colour, "no colour" or note, not undone.
+const hasAnswers = sql`EXISTS (
+	SELECT 1 FROM syn_answers x WHERE x.attempt_id = ${synAttempts.id} AND x.kind IN ('colour', 'none', 'note')
+		AND NOT EXISTS (SELECT 1 FROM syn_answers r WHERE r.attempt_id = x.attempt_id AND r.kind = 'retract' AND r.supersedes = x.client_id))`;
+
+// A participant's attempts: finished; unfinished and still offered (hidden items are out of rounds);
+// or started, meaning unfinished with at least one answer, hidden or not (Results shows these).
+export async function attemptsList(pid: string, which: 'finished' | 'unfinished' | 'started') {
 	return db
 		.select({
 			id: synAttempts.id,
@@ -206,9 +213,9 @@ export async function attemptsList(pid: string, finished: boolean) {
 		.where(
 			and(
 				eq(synAttempts.participantId, pid),
-				finished ? isNotNull(synAttempts.finishedAt) : isNull(synAttempts.finishedAt),
-				// A hidden item is out of rounds: its unfinished attempts are no longer offered.
-				finished ? undefined : eq(synStimuli.hidden, false)
+				which === 'finished' ? isNotNull(synAttempts.finishedAt) : isNull(synAttempts.finishedAt),
+				which === 'unfinished' ? eq(synStimuli.hidden, false) : undefined,
+				which === 'started' ? hasAnswers : undefined
 			)
 		)
 		.orderBy(desc(synAttempts.createdAt));
@@ -240,21 +247,26 @@ export interface ResultAnswer {
 	end: number;
 	hex: string | null;
 	lightness: number | null;
+	// Further colours, when the answer has more than one.
+	more: { hex: string; lightness: number }[];
 	note: string | null;
 }
 
-// One item with every finished attempt at it (the first and any retests), each with its answers
-// and colours. Opening it is logged.
+// One item with every attempt at it (the first and any retests) that is finished or has answers,
+// each with its answers and colours. Opening it is logged.
 export async function result(pid: string, attemptId: string) {
 	const row = await getAttempt(pid, attemptId);
 	if (!row) return null;
 	const attempts = await db
 		.select({ id: synAttempts.id, retest: synAttempts.retest, finishedAt: synAttempts.finishedAt })
 		.from(synAttempts)
-		.where(and(eq(synAttempts.participantId, pid), eq(synAttempts.stimulusId, row.stimulus.id), isNotNull(synAttempts.finishedAt)))
+		.where(and(eq(synAttempts.participantId, pid), eq(synAttempts.stimulusId, row.stimulus.id)))
 		.orderBy(asc(synAttempts.createdAt));
 	const withAnswers = [];
-	for (const a of attempts) withAnswers.push({ ...a, answers: await answersWithColours(a.id) });
+	for (const a of attempts) {
+		const answers = await answersWithColours(a.id);
+		if (a.finishedAt || answers.length) withAnswers.push({ ...a, answers });
+	}
 	await db.insert(synResultViews).values({ participantId: pid, stimulusId: row.stimulus.id });
 	return { stimulus: row.stimulus, attempts: withAnswers };
 }
@@ -267,8 +279,16 @@ export async function answersWithColours(attemptId: string): Promise<ResultAnswe
 	return rows
 		.filter((r) => (r.kind === 'colour' || r.kind === 'none' || r.kind === 'note') && !undone.has(r.clientId))
 		.map((r) => {
-			const c = r.colour as { hex: string; l: number } | null;
-			return { kind: r.kind as ResultAnswer['kind'], start: r.start!, end: r.end!, hex: c?.hex ?? null, lightness: c?.l ?? null, note: r.note };
+			const c = r.colour as { hex: string; l: number; more?: { hex: string; l: number }[] } | null;
+			return {
+				kind: r.kind as ResultAnswer['kind'],
+				start: r.start!,
+				end: r.end!,
+				hex: c?.hex ?? null,
+				lightness: c?.l ?? null,
+				more: (c?.more ?? []).map((m) => ({ hex: m.hex, lightness: m.l })),
+				note: r.note
+			};
 		});
 }
 

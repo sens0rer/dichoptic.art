@@ -12,6 +12,8 @@ const colour = z.object({
 	hex: z.string().regex(/^#[0-9a-f]{6}$/),
 	lab: z.tuple([z.number(), z.number(), z.number()])
 });
+// A marking answer may carry further colours.
+const answerColour = colour.extend({ more: z.array(colour).max(20).optional() });
 
 const answer = z.object({
 	clientId: z.string().min(8).max(64),
@@ -19,7 +21,7 @@ const answer = z.object({
 	kind: z.enum(['colour', 'none', 'note', 'flag', 'retract']),
 	start: z.number().int().min(0).nullable(),
 	end: z.number().int().min(0).nullable(),
-	colour: colour.nullable(),
+	colour: answerColour.nullable(),
 	note: z.string().max(5000).nullable(),
 	supersedes: z.string().max(64).nullable(),
 	answeredAt: z.iso.datetime({ offset: true }),

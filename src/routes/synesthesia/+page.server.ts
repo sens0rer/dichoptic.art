@@ -15,7 +15,7 @@ export async function load({ cookies }) {
 	const pid = await participant(cookies);
 	const [c, unfinished, position, retests, reverse] = await Promise.all([
 		counts(pid),
-		attemptsList(pid, false),
+		attemptsList(pid, 'unfinished'),
 		getPosition(pid),
 		retestsAvailable(pid),
 		reverseCount(pid)

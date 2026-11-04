@@ -8,7 +8,7 @@
 	<div class="top"><a href="/synesthesia">← Tests</a></div>
 	<h1>Results</h1>
 	{#if !data.groups.length}
-		<p>Nothing finished yet. Items appear here once every part of them is marked.</p>
+		<p>Nothing marked yet. Items appear here once you have marked at least one part.</p>
 	{/if}
 	{#each data.groups as g (g.name)}
 		<h2>{g.name}</h2>
@@ -16,7 +16,8 @@
 			{#each g.items as item (item.id)}
 				<li>
 					<a href="/synesthesia/results/{item.id}">{item.title ?? item.preview}</a>
-					{#if item.retests}<span class="muted">{item.retests} retest{item.retests > 1 ? 's' : ''}</span>{/if}
+					{#if !item.finished}<span class="muted">unfinished</span>
+					{:else if item.retests}<span class="muted">{item.retests} retest{item.retests > 1 ? 's' : ''}</span>{/if}
 				</li>
 			{/each}
 		</ul>

@@ -13,6 +13,6 @@ export async function load({ cookies, params }) {
 			title: r.stimulus.title,
 			category: category(r.stimulus.category)?.name ?? r.stimulus.category
 		},
-		attempts: r.attempts.map((a) => ({ id: a.id, retest: a.retest, finishedAt: a.finishedAt!.toISOString(), answers: a.answers }))
+		attempts: r.attempts.map((a) => ({ id: a.id, retest: a.retest, finishedAt: a.finishedAt?.toISOString() ?? null, answers: a.answers }))
 	};
 }
