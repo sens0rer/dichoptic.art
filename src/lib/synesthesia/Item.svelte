@@ -283,14 +283,19 @@
 	</main>
 
 	<aside class="panel" bind:clientHeight={panelHeight}>
-		<div class="current">
-			{#if selection}
-				<span class="label">Selected</span>
-				{#if mathPreview}<span class="selected math-preview">{@html mathPreview}</span
-					>{:else}<span class="selected" lang={data.stimulus.lang}>{selectedText}</span>{/if}
-			{:else}
-				<span class="label">{finished ? 'All marked' : 'Tap a word to select it'}</span>
-			{/if}
+		<!-- Undo sits on this line, by the selection it gives back, so the actions below stay a
+		     tidy block. -->
+		<div class="head">
+			<div class="current">
+				{#if selection}
+					<span class="label">Selected</span>
+					{#if mathPreview}<span class="selected math-preview">{@html mathPreview}</span
+						>{:else}<span class="selected" lang={data.stimulus.lang}>{selectedText}</span>{/if}
+				{:else}
+					<span class="label">{finished ? 'All marked' : 'Tap a word to select it'}</span>
+				{/if}
+			</div>
+			<button class="undo" onclick={undo} disabled={!history.length || busy}>↶ Undo</button>
 		</div>
 		{#if added.length}
 			<div class="added">
@@ -316,7 +321,6 @@
 			<button onclick={addColour} disabled={!selection || busy || added.length >= 9}>Add colour</button>
 			<button onclick={() => (noteOpen = !noteOpen)} class:on={noteOpen || note}>Note</button>
 			<button onclick={samePrevious} disabled={!previous}>Same as previous</button>
-			<button onclick={undo} disabled={!history.length || busy}>Undo</button>
 		</div>
 	</aside>
 </div>
@@ -396,7 +400,19 @@
 		padding: 16px;
 		--wheel: 200px;
 	}
+	.head {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.undo {
+		flex: none;
+		padding: 0.3em 0.8em;
+		font-size: 0.85rem;
+	}
 	.current {
+		flex: 1;
+		min-width: 0;
 		font-size: 0.85rem;
 		min-height: 1.4em;
 		white-space: nowrap;
