@@ -13,6 +13,12 @@ const COOKIE = 'syn_participant';
 export async function participant(cookies: Cookies): Promise<string> {
 	let id = cookies.get(COOKIE);
 	if (!id || !/^[A-Za-z0-9]{24}$/.test(id)) id = newFileId();
+	// A browser tied to her other device continues as that participant.
+	for (let hops = 0; hops < 5; hops++) {
+		const [row] = await db.select({ to: synParticipants.mergedInto }).from(synParticipants).where(eq(synParticipants.id, id));
+		if (!row?.to) break;
+		id = row.to;
+	}
 	// A page's layout and page loads run in parallel and share these cookies; setting the cookie
 	// at once means the second call already sees the id the first one made.
 	cookies.set(COOKIE, id, {
@@ -52,9 +58,10 @@ export const CATEGORIES = [
 export type CategoryId = (typeof CATEGORIES)[number]['id'];
 export const category = (id: string) => CATEGORIES.find((c) => c.id === id);
 
-// Song picks belong to whoever added them; every other pool is shared.
-const mine = (pid: string) =>
-	sql`(${synStimuli.category} <> 'picks' OR ${synStimuli.source}->>'participant' = ${pid})`;
+// Song picks belong to whoever added them (or a browser tied to them); every other pool is shared.
+const ownPick = (source: unknown, pid: string) =>
+	sql`(${source}->>'participant' = ${pid} OR ${source}->>'participant' IN (SELECT id FROM syn_participants WHERE merged_into = ${pid}))`;
+const mine = (pid: string) => sql`(${synStimuli.category} <> 'picks' OR ${ownPick(synStimuli.source, pid)})`;
 
 // Her time zone, from her latest answer, so "today" means her day.
 async function timeZone(pid: string) {
@@ -195,7 +202,7 @@ export async function counts(pid: string) {
 			count(a.id) FILTER (WHERE a.finished_at IS NULL)::int AS unfinished
 		FROM syn_stimuli s
 		LEFT JOIN syn_attempts a ON a.stimulus_id = s.id AND a.participant_id = ${pid} AND NOT a.retest
-		WHERE (s.category <> 'picks' OR s.source->>'participant' = ${pid})
+		WHERE (s.category <> 'picks' OR ${ownPick(sql`s.source`, pid)})
 		GROUP BY s.category`);
 	return Object.fromEntries(rows.map((r) => [r.category, r]));
 }

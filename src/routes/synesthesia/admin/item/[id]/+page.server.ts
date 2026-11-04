@@ -26,6 +26,7 @@ export async function load({ params }) {
 			retest: a.retest,
 			started: a.createdAt.toISOString(),
 			finished: a.finishedAt?.toISOString() ?? null,
+			devices: a.devices,
 			answers: a.answers
 		}))
 	};

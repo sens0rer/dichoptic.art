@@ -65,6 +65,7 @@
 				<p class="muted">
 					<a href="/synesthesia/admin/participant/{a.participantId}"><code>{a.participantId}</code></a>
 					· {a.retest ? 'retest' : 'first time'} · {a.finished ? `finished ${when(a.finished)}` : `started ${when(a.started)}, unfinished`}
+					· {a.devices.join(', ')}
 				</p>
 				<ResultText
 					{parsed}

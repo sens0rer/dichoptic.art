@@ -17,7 +17,7 @@ An unlisted part of dichoptic.art for one participant (a friend) to record synes
 | `src/lib/synesthesia/` | Page code shared by those routes: `Item.svelte` (marking screen), `Marker.svelte` (text selection: tap, handles, magnifier), `MathMarker.svelte` (maths selection: tap, snapping box, group strip; a root's √ and a fraction's bar count as symbols of their own), `Picker.svelte` (Okhsl wheel and sliders), `ResultText.svelte` (text or maths drawn in her colours), `outbox.svelte.ts` (answers saved on the device and sent in order), `segment.ts` (graphemes, words, maths symbols, coverage), `okhsl.ts` (colour maths), `checklist.ts`, `stimulus.ts` (item ids), `temml.css` + `fonts/` (Latin Modern Math). |
 | `src/lib/server/synesthesia.ts` | Server side: participant cookie, categories, picking the next item, retests, answers in force, finishing, results, song picks. |
 | `src/lib/server/synesthesiaAdmin.ts`, `synesthesiaExport.ts`, `lyrics.ts` | Admin queries, JSON/CSV export, LRCLIB search. |
-| `src/lib/server/db/schema.ts` | Tables, all prefixed `syn_` (see Data). Migrations `drizzle/0009`–`0011`. |
+| `src/lib/server/db/schema.ts` | Tables, all prefixed `syn_` (see Data). Migrations `drizzle/0009`–`0012`. |
 | `scripts/synesthesia/` | Import scripts that fill the pools (see Content). `pool.ts` (adding items), `sources.ts` (fetching and cutting passages). |
 | `tests/okhsl.test.ts`, `tests/segment.test.ts` | Colour conversion and text/maths splitting. |
 | Root layout `src/routes/+layout.svelte` | Hides the site header and cookie banner on `/synesthesia` (the only change to the main site). |
@@ -25,6 +25,7 @@ An unlisted part of dichoptic.art for one participant (a friend) to record synes
 ## How it works
 
 - **Participant**: a random id in a cookie (`syn_participant`, path `/synesthesia`, httpOnly, 10 years). A browser becomes a participant row only with its first answer; visiting or starting items records nothing. Answers from anyone else are filtered out by this id (the export page lists participants with their devices).
+- **Her devices**: each browser starts as its own participant. Tie one to another on `/synesthesia/admin/participant/<id>` ("Tie to another participant"), or with `scripts/synesthesia/merge-participants.ts <from> <into> [--apply]`. Everything recorded moves to the chosen participant and nothing is deleted; the old participant keeps `merged_into` and a `merge_record` listing every moved row id, and its cookie is switched on its next visit. An item started first time on both keeps the earlier attempt as the first and the later one becomes a retest. The device of every answer stays known: answers point at their session, and sessions keep the device. Admin pages and the CSVs show it as a short label ("iPhone · Safari").
 - **Items** (`syn_stimuli`) never change: the id is a hash of the content (and, for her songs, her id). Removing an item means hiding it (admin item page), which only keeps it out of new rounds.
 - **Attempts** (`syn_attempts`): one go at one item; a retest is a new attempt at the same item. An attempt is finished once every part (word, letter or maths symbol, by the item's `unit`) is covered by a colour or "no colour" answer.
 - **Answers** (`syn_answers`) are append-only: `colour` (one or more colours: the first, plus `more` for the rest), `none`, `note`, `flag` ("I know this song"), and `retract` (undo of another answer). Each has the range (graphemes, or maths symbol indices), the colour (Okhsl + hex + Oklab), the note, and timecodes: device clock and time zone, ms since the item was shown, ms since the previous answer, server receive time. The device keeps unsent answers (`localStorage`) and resends until the server has them; a resent answer is stored once (client id).
@@ -59,14 +60,14 @@ Pitfalls the scripts already guard against (worth knowing when adding sources): 
 ## Running it
 
 - Local: `npm run db`, `npm run dev`, then http://localhost:5173/synesthesia. On a phone on the same Wi-Fi: `npm run dev -- --host` and the computer's address (Node is allowed through the firewall on this machine).
-- Migrations: `npm run db:migrate` (production: same with `DATABASE_URL` set). Migrations 0009–0011 add the `syn_` tables and only touch those.
+- Migrations: `npm run db:migrate` (production: same with `DATABASE_URL` set). Migrations 0009–0012 add the `syn_` tables and only touch those.
 - Checks: `npm run check`, `npm test`.
-- Production state (3 Nov 2026): migrations applied up to 0011; all pools imported. Japanese 月 (moon) is missing from distant languages: the Wikipedia page is a disambiguation page.
+- Production state (3 Nov 2026): migrations applied up to 0012; all pools imported. Japanese 月 (moon) is missing from distant languages: the Wikipedia page is a disambiguation page.
 
 ## Admin and data
 
 - `/synesthesia/admin`: categories with counts; item lists with source and tags (filter by language, show hidden); item pages with the text as shown, use per participant, every participant's answers drawn in colour, and hide/unhide. `/synesthesia/admin/participant/<id>`: one participant's answered items and reverse-test answers.
-- `/synesthesia/export`: `answers.csv` (one row per answer, with the text covered, colour in hex/Okhsl/Oklab, further colours in the `more_*` columns (space-separated, one value per colour), all timecodes, and whether it was undone), `reverse.csv`, `all.json` (everything, including sessions, devices, items and result views), and the participant list.
+- `/synesthesia/export`: `answers.csv` (one row per answer, with the device it was given on, the text covered, colour in hex/Okhsl/Oklab, further colours in the `more_*` columns (space-separated, one value per colour), all timecodes, and whether it was undone), `reverse.csv`, `all.json` (everything, including sessions, devices, items and result views), and the participant list.
 - Consistency analysis is meant to happen on the export (compare attempts at the same item per word/letter/symbol in Oklab); nothing is scored on the site.
 
 ## Changes from the plan

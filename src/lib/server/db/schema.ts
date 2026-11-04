@@ -222,10 +222,15 @@ export const uploadLog = pgTable(
 // /synesthesia: a test suite for one participant, unlisted. Tables are separate from the
 // main site's and share nothing with it.
 
-// One row per browser (the participant cookie). `position` is where she left off.
+// One row per browser (the participant cookie). `position` is where she left off. `mergedInto`:
+// this browser was tied to another participant (her other device); its data moved there, and its
+// cookie is switched to that id on its next visit. `mergeRecord` lists every row that moved, so
+// what came from this browser stays known (and a merge could be undone).
 export const synParticipants = pgTable('syn_participants', {
 	id: text('id').primaryKey(),
 	position: jsonb('position'),
+	mergedInto: text('merged_into'),
+	mergeRecord: jsonb('merge_record'),
 	...timestamps()
 });
 

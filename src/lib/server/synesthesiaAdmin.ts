@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm';
-import { db, synAttempts, synParticipants, synReverse, synStimuli } from './db';
+import { and, asc, desc, eq, inArray, isNull, ne, sql } from 'drizzle-orm';
+import { deviceLabel } from '../synesthesia/device';
+import { db, synAnswers, synAttempts, synParticipants, synReverse, synSessions, synStimuli } from './db';
 import { answersWithColours } from './synesthesia';
 
 // What the admin pages show about the pools: items with their source, tags and how much they have
@@ -72,22 +73,38 @@ export async function itemResults(stimulusId: string) {
 	const out = [];
 	for (const a of attempts) {
 		const answers = await answersWithColours(a.id);
-		if (answers.length) out.push({ ...a, answers });
+		if (!answers.length) continue;
+		// The devices the answers were given on.
+		const sessions = await db.selectDistinct({ id: synAnswers.sessionId }).from(synAnswers).where(eq(synAnswers.attemptId, a.id));
+		const labels = await deviceLabels(sessions.map((s) => s.id));
+		out.push({ ...a, answers, devices: [...new Set(labels.values())] });
 	}
 	return out;
 }
 
 // One participant: what they have answered, by item, and their reverse-test answers.
 export async function participantSummary(pid: string) {
-	const attempts = await db.execute<{ id: string; stimulus_id: string; category: string; title: string | null; body: string; unit: string; retest: boolean; finished_at: string | null; created_at: string; answers: number }>(sql`
+	const attempts = await db.execute<{ id: string; stimulus_id: string; category: string; title: string | null; body: string; unit: string; retest: boolean; finished_at: string | null; created_at: string; answers: number; sessions: string[] }>(sql`
 		SELECT a.id, a.stimulus_id, s.category, s.title, s.body, s.unit, a.retest, a.finished_at, a.created_at,
-			(SELECT count(*)::int FROM syn_answers x WHERE x.attempt_id = a.id AND x.kind IN ('colour', 'none')) AS answers
+			(SELECT count(*)::int FROM syn_answers x WHERE x.attempt_id = a.id AND x.kind IN ('colour', 'none')) AS answers,
+			ARRAY(SELECT DISTINCT x.session_id FROM syn_answers x WHERE x.attempt_id = a.id) AS sessions
 		FROM syn_attempts a JOIN syn_stimuli s ON s.id = a.stimulus_id
 		WHERE a.participant_id = ${pid}
 		ORDER BY a.created_at DESC`);
 	const reverse = await db.select().from(synReverse).where(eq(synReverse.participantId, pid)).orderBy(desc(synReverse.id));
 	const [p] = await db.select().from(synParticipants).where(eq(synParticipants.id, pid));
-	return { participant: p ?? null, attempts: [...attempts].filter((a) => a.answers > 0), reverse };
+	const sessions = await db.select().from(synSessions).where(eq(synSessions.participantId, pid)).orderBy(asc(synSessions.createdAt));
+	// Browsers tied to this participant, and the participants it could be tied to.
+	const tied = await db.select({ id: synParticipants.id, record: synParticipants.mergeRecord }).from(synParticipants).where(eq(synParticipants.mergedInto, pid));
+	const others = await db.select({ id: synParticipants.id }).from(synParticipants).where(and(ne(synParticipants.id, pid), isNull(synParticipants.mergedInto)));
+	return { participant: p ?? null, attempts: [...attempts].filter((a) => a.answers > 0), reverse, sessions, tied, others };
+}
+
+// The device of each session, as a short label, for showing which device an answer was given on.
+export async function deviceLabels(sessionIds: string[]) {
+	if (!sessionIds.length) return new Map<string, string>();
+	const rows = await db.select({ id: synSessions.id, device: synSessions.device }).from(synSessions).where(inArray(synSessions.id, sessionIds));
+	return new Map(rows.map((r) => [r.id, deviceLabel(r.device)]));
 }
 
 // Items never change; hiding only keeps one out of new rounds (answers to it stay).

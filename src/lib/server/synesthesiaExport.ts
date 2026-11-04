@@ -1,4 +1,5 @@
 import { asc, inArray } from 'drizzle-orm';
+import { deviceLabel } from '../synesthesia/device';
 import { parse, type UnitKind } from '../synesthesia/segment';
 import { db, synAnswers, synAttempts, synParticipants, synResultViews, synReverse, synSessions, synStimuli } from './db';
 
@@ -35,6 +36,8 @@ export async function answersCsv() {
 	const stimuli = new Map(data.stimuli.map((s) => [s.id, s]));
 	const parsed = new Map(data.stimuli.map((s) => [s.id, parse(s.body, s.unit as UnitKind, s.lang)]));
 	const attempts = new Map(data.attempts.map((a) => [a.id, a]));
+	// The device each answer was given on, from its session.
+	const device = new Map(data.sessions.map((x) => [x.id, deviceLabel(x.device)]));
 	const undone = new Set(data.answers.filter((a) => a.kind === 'retract').map((a) => a.supersedes));
 	const rows = data.answers.map((a) => {
 		const at = attempts.get(a.attemptId)!;
@@ -47,7 +50,7 @@ export async function answersCsv() {
 		const list = (f: (m: C) => unknown) => (more.length ? more.map(f).join(' ') : null);
 		const text = a.start !== null && a.end !== null ? p.graphemes.slice(a.start, a.end).join(s.unit === 'math' ? ' ' : '') : '';
 		return [
-			a.id, a.participantId, a.sessionId, a.attemptId, at.retest, s.id, s.category, s.lang, s.title,
+			a.id, a.participantId, a.sessionId, device.get(a.sessionId) ?? 'unknown', a.attemptId, at.retest, s.id, s.category, s.lang, s.title,
 			a.kind, a.start, a.end, text, c?.hex, c?.h, c?.s, c?.l, c?.lab[0], c?.lab[1], c?.lab[2],
 			more.length, list((m) => m.hex), list((m) => m.h), list((m) => m.s), list((m) => m.l), list((m) => m.lab.join(',')),
 			a.note, a.supersedes, undone.has(a.clientId), a.answeredAt, a.tz, a.shownMs, a.sincePrevMs, a.receivedAt, a.clientId
@@ -55,7 +58,7 @@ export async function answersCsv() {
 	});
 	return csv(
 		[
-			'id', 'participant', 'session', 'attempt', 'retest', 'stimulus', 'category', 'lang', 'title',
+			'id', 'participant', 'session', 'device', 'attempt', 'retest', 'stimulus', 'category', 'lang', 'title',
 			'kind', 'start', 'end', 'text', 'hex', 'okhsl_h', 'okhsl_s', 'okhsl_l', 'oklab_L', 'oklab_a', 'oklab_b',
 			'more_colours', 'more_hex', 'more_okhsl_h', 'more_okhsl_s', 'more_okhsl_l', 'more_oklab',
 			'note', 'undoes', 'undone', 'answered_at', 'time_zone', 'ms_since_shown', 'ms_since_previous', 'received_at', 'client_id'
@@ -65,12 +68,13 @@ export async function answersCsv() {
 }
 
 export async function reverseCsv() {
-	const rows = await db.select().from(synReverse).orderBy(asc(synReverse.id));
+	const [rows, sessions] = await Promise.all([db.select().from(synReverse).orderBy(asc(synReverse.id)), db.select().from(synSessions)]);
+	const device = new Map(sessions.map((x) => [x.id, deviceLabel(x.device)]));
 	return csv(
-		['id', 'participant', 'session', 'hex', 'okhsl_h', 'okhsl_s', 'okhsl_l', 'oklab_L', 'oklab_a', 'oklab_b', 'text', 'nothing', 'answered_at', 'time_zone', 'ms_since_shown', 'received_at'],
+		['id', 'participant', 'session', 'device', 'hex', 'okhsl_h', 'okhsl_s', 'okhsl_l', 'oklab_L', 'oklab_a', 'oklab_b', 'text', 'nothing', 'answered_at', 'time_zone', 'ms_since_shown', 'received_at'],
 		rows.map((r) => {
 			const c = r.colour as { h: number; s: number; l: number; hex: string; lab: [number, number, number] };
-			return [r.id, r.participantId, r.sessionId, c.hex, c.h, c.s, c.l, c.lab[0], c.lab[1], c.lab[2], r.text, r.nothing, r.answeredAt, r.tz, r.shownMs, r.receivedAt];
+			return [r.id, r.participantId, r.sessionId, device.get(r.sessionId) ?? 'unknown', c.hex, c.h, c.s, c.l, c.lab[0], c.lab[1], c.lab[2], r.text, r.nothing, r.answeredAt, r.tz, r.shownMs, r.receivedAt];
 		})
 	);
 }
