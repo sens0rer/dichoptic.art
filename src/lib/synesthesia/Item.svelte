@@ -6,7 +6,7 @@
 	import MathMarker from './MathMarker.svelte';
 	import Picker from './Picker.svelte';
 	import { colour as makeColour, css } from './okhsl';
-	import { outbox, pendingFor, send, startOutbox, uid, type Answer } from './outbox.svelte';
+	import { outbox, pendingFor, send, sessionId, startOutbox, uid, type Answer } from './outbox.svelte';
 	import { allCovered, coveredMask, nextUncovered, parse, type Span, type UnitKind } from './segment';
 
 	// One item being marked. Created afresh for every item (the page keys it by attempt id), so
@@ -46,12 +46,15 @@
 	const all = $derived([...added, shown]);
 	// Answers made on this visit, newest last, for Undo.
 	let history = $state<Mark[]>([]);
-	// The colours of this visit's colour answers, by client id, for "Copy colour". Only this visit:
-	// the page never gets earlier colours from the server, so marking stays blind.
+	// "Copy colour" copies the colours of a word coloured on this visit or the one before. Their
+	// colours, by client id: from the server (this visit before a reload, and the last visit), and
+	// from answers made since the page loaded. Earlier visits stay blind.
 	type Colours = { added: Hsl[]; colour: Hsl };
 	const coloursOf = new Map<string, Colours>();
+	let copyBase = $state<Mark[]>([]);
+	const copySources = $derived([...copyBase, ...history].filter((m) => m.kind === 'colour' && coloursOf.has(m.clientId)));
 	const latestColours = $derived.by(() => {
-		const m = history.findLast((m) => m.kind === 'colour' && coloursOf.has(m.clientId));
+		const m = copySources.at(-1);
 		return m ? coloursOf.get(m.clientId)! : null;
 	});
 
@@ -104,6 +107,16 @@
 				.filter((a) => a.kind === 'colour' || a.kind === 'none' || a.kind === 'note')
 				.map((a) => ({ clientId: a.clientId, kind: a.kind as Mark['kind'], start: a.start!, end: a.end! }))
 		].filter((m) => !undone.has(m.clientId));
+		// Colours to copy: this visit's and the latest other visit's (the server sends the two latest).
+		const current = sessionId();
+		const keep = [current, data.visits.find((v) => v !== current)];
+		const copyable = data.copyable.filter((a) => keep.includes(a.sessionId));
+		for (const a of copyable) {
+			const cs = [a.colour, ...(a.colour.more ?? [])].map(({ h, s, l }) => ({ h, s, l }));
+			coloursOf.set(a.clientId, { added: cs.slice(0, -1), colour: cs.at(-1)! });
+		}
+		copyBase = copyable.map((a) => ({ clientId: a.clientId, kind: 'colour' as const, start: a.start, end: a.end }));
+
 		// "I know this song": the server's flag, or an unsent one, unless undone.
 		const unsentFlag = local.filter((a) => a.kind === 'flag').at(-1);
 		if (unsentFlag) knownId = unsentFlag.clientId;
@@ -220,7 +233,7 @@
 		copying = false;
 	}
 
-	// "Copy colour": the next tap on the text picks a word coloured on this visit and copies its
+	// "Copy colour": the next tap on the text picks a word coloured on this visit or the last and copies its
 	// colours into the picker; the selection stays where it was. "Previous" copies the latest.
 	let copying = $state(false);
 	let copyMiss = $state(false);
@@ -237,7 +250,7 @@
 			if (tapped === copyFrom) return;
 			// The most specific answer under the tap: the shortest, and of those the latest.
 			const g = tapped?.start ?? -1;
-			const under = history.filter((m) => m.kind === 'colour' && coloursOf.has(m.clientId) && m.start <= g && g < m.end);
+			const under = copySources.filter((m) => m.start <= g && g < m.end);
 			const shortest = Math.min(...under.map((m) => m.end - m.start));
 			const found = under.findLast((m) => m.end - m.start === shortest);
 			copyMiss = !found;
@@ -333,7 +346,7 @@
 		</div>
 		{#if copying}
 			<div class="copying">
-				<span>{copyMiss ? 'No colour from this visit there. Tap another word you coloured,' : 'Tap a word you coloured on this visit to copy its colour,'} or:</span>
+				<span>{copyMiss ? 'No colour from this visit or the last there. Tap another word you coloured,' : 'Tap a word you coloured on this visit or the last to copy its colour,'} or:</span>
 				<button onclick={() => latestColours && useColours(latestColours)}>Previous</button>
 				<button onclick={() => (copying = false)}>Cancel</button>
 			</div>

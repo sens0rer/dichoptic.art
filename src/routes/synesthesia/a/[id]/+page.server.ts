@@ -9,6 +9,11 @@ export async function load({ cookies, params }) {
 	const active = await activeAnswers(row.attempt.id);
 	// "I know this song", for song items: the flag answer in force, if any.
 	const known = active.find((a) => a.kind === 'flag' && a.note === 'knows-song');
+	// Colours she may copy ("Copy colour"): her colour answers from the two latest visits with any.
+	// The page keeps the current visit's and the one before; nothing earlier reaches it, and nothing
+	// is shown unless she copies.
+	const coloured = active.filter((a) => a.kind === 'colour' && a.colour);
+	const visits = [...new Set(coloured.map((a) => a.sessionId).reverse())].slice(0, 2);
 	return {
 		attempt: { id: row.attempt.id, finished: !!row.attempt.finishedAt, retest: row.attempt.retest },
 		stimulus: {
@@ -21,6 +26,10 @@ export async function load({ cookies, params }) {
 		answers: active
 			.filter((a) => a.kind !== 'flag')
 			.map(({ clientId, kind, start, end }) => ({ clientId, kind: kind as 'colour' | 'none' | 'note', start, end })),
+		copyable: coloured
+			.filter((a) => visits.includes(a.sessionId))
+			.map(({ clientId, start, end, sessionId, colour }) => ({ clientId, start, end, sessionId, colour: colour! })),
+		visits,
 		song: row.stimulus.category === 'lyrics' ? { knownId: known?.clientId ?? null } : null,
 		position: position?.attemptId === row.attempt.id ? position : null
 	};

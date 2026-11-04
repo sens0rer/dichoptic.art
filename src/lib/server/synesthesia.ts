@@ -1,6 +1,7 @@
 import type { Cookies } from '@sveltejs/kit';
 import { and, asc, desc, eq, isNotNull, isNull, sql } from 'drizzle-orm';
 import { allCovered, parse, type Span, type UnitKind } from '../synesthesia/segment';
+import type { Colour } from '../synesthesia/okhsl';
 import { db, synAnswers, synAttempts, synParticipants, synResultViews, synReverse, synSessions, synStimuli } from './db';
 import { newFileId, newId } from './ids';
 import { stimulusId } from '../synesthesia/stimulus';
@@ -139,7 +140,9 @@ export async function activeAnswers(attemptId: string) {
 			start: synAnswers.start,
 			end: synAnswers.end,
 			supersedes: synAnswers.supersedes,
-			note: synAnswers.note
+			note: synAnswers.note,
+			sessionId: synAnswers.sessionId,
+			colour: synAnswers.colour
 		})
 		.from(synAnswers)
 		.where(eq(synAnswers.attemptId, attemptId))
@@ -147,7 +150,15 @@ export async function activeAnswers(attemptId: string) {
 	const undone = new Set(rows.filter((r) => r.kind === 'retract').map((r) => r.supersedes));
 	return rows
 		.filter((r) => r.kind !== 'retract' && !undone.has(r.clientId))
-		.map((r) => ({ clientId: r.clientId, kind: r.kind as 'colour' | 'none' | 'note' | 'flag', start: r.start!, end: r.end!, note: r.note }));
+		.map((r) => ({
+			clientId: r.clientId,
+			kind: r.kind as 'colour' | 'none' | 'note' | 'flag',
+			start: r.start!,
+			end: r.end!,
+			note: r.note,
+			sessionId: r.sessionId,
+			colour: r.colour as Colour | null
+		}));
 }
 
 // An item is finished once every unit is covered by a colour or "no colour" answer. Undoing an

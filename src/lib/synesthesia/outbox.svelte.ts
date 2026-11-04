@@ -99,6 +99,8 @@ function queue(item: Item) {
 	void flush();
 }
 
+// This visit's id, as sent with its answers.
+export const sessionId = () => session().id;
 export const send = (answer: Answer) => queue(answer);
 export const sendReverse = (answer: ReverseAnswer) => queue({ ...answer, type: 'reverse' });
 
