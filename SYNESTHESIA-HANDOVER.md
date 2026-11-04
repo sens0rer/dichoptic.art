@@ -75,6 +75,7 @@ Recorded in SYNESTHESIA.md as they were made; the main ones:
 - Made-up words are generated (UniPseudo's method) rather than taken from ARC/Wuggy (ARC is a web form only, Wuggy needs Python); sound-alikes are filtered approximately.
 - English separate words use subtitle frequencies filtered by a dictionary, Ukrainian ones the BRUK corpus, rather than rating norms.
 - Three English songs replaced (Rock-a-bye Baby, Greensleeves, Blow the Man Down) because Wikisource lacks the planned ones in usable form.
+- "Same as previous" became "Copy colour": any word coloured on this visit, or "Previous". Undo moved to the panel's top line.
 - Retests are a category that re-serves her finished items, not a separate three-repeat module. Hidden items are not retested. The category is hidden from the home page for now (`hidden: true` in `CATEGORIES`; remove it to bring Retests back).
 - No translations outside Parallel texts: every Wikipedia subject, word list and colour or number word is in one language only. Time: days of the week and seasons in Ukrainian, months and times of day in English, different dates in each.
 - The preloaded Songs category is retired (only her own songs remain); the "I know this song" flag belonged to it and no longer shows on new items.

@@ -42,11 +42,18 @@
 	// "Add colour" sets the picker's colour aside here and starts the picker afresh for the next one;
 	// Confirm saves these and the picker's colour.
 	let added = $state<Hsl[]>([]);
-	let previous = $state<{ added: Hsl[]; colour: Hsl } | null>(null);
 	// Every colour Confirm would save, in order.
 	const all = $derived([...added, shown]);
 	// Answers made on this visit, newest last, for Undo.
 	let history = $state<Mark[]>([]);
+	// The colours of this visit's colour answers, by client id, for "Copy colour". Only this visit:
+	// the page never gets earlier colours from the server, so marking stays blind.
+	type Colours = { added: Hsl[]; colour: Hsl };
+	const coloursOf = new Map<string, Colours>();
+	const latestColours = $derived.by(() => {
+		const m = history.findLast((m) => m.kind === 'colour' && coloursOf.has(m.clientId));
+		return m ? coloursOf.get(m.clientId)! : null;
+	});
 
 	let shownAt = 0;
 	let lastAt: number | null = null;
@@ -61,6 +68,7 @@
 		added = [];
 		note = '';
 		noteOpen = false;
+		copying = false;
 	}
 
 	// More than one colour for one part: the picker's colour is set aside, and the picker starts
@@ -140,7 +148,7 @@
 		const mark = { clientId: a.clientId, kind, start: a.start!, end: a.end! };
 		marks = [...marks, mark];
 		history = [...history, mark];
-		if (kind === 'colour') previous = { added, colour: { ...shown } };
+		if (kind === 'colour') coloursOf.set(a.clientId, { added, colour: { ...shown } });
 		resetPicker();
 		if (kind === 'note') return;
 		advance(selection.end);
@@ -205,12 +213,38 @@
 		}
 	}
 
-	function samePrevious() {
-		if (!previous) return;
-		({ h, s, l } = previous.colour);
-		added = previous.added;
+	function useColours(c: Colours) {
+		({ h, s, l } = c.colour);
+		added = [...c.added];
 		fresh = false;
+		copying = false;
 	}
+
+	// "Copy colour": the next tap on the text picks a word coloured on this visit and copies its
+	// colours into the picker; the selection stays where it was. "Previous" copies the latest.
+	let copying = $state(false);
+	let copyMiss = $state(false);
+	let copyFrom: Span | null = null;
+	function startCopy() {
+		copyFrom = selection;
+		copyMiss = false;
+		copying = true;
+	}
+	$effect(() => {
+		const tapped = selection;
+		if (!copying) return;
+		untrack(() => {
+			if (tapped === copyFrom) return;
+			// The most specific answer under the tap: the shortest, and of those the latest.
+			const g = tapped?.start ?? -1;
+			const under = history.filter((m) => m.kind === 'colour' && coloursOf.has(m.clientId) && m.start <= g && g < m.end);
+			const shortest = Math.min(...under.map((m) => m.end - m.start));
+			const found = under.findLast((m) => m.end - m.start === shortest);
+			copyMiss = !found;
+			if (found) useColours(coloursOf.get(found.clientId)!);
+			selection = copyFrom;
+		});
+	});
 
 	// "Continue where you left off": item, scroll and selection, saved on the server.
 	let positionTimer: ReturnType<typeof setTimeout> | undefined;
@@ -297,6 +331,13 @@
 			</div>
 			<button class="undo" onclick={undo} disabled={!history.length || busy}>↶ Undo</button>
 		</div>
+		{#if copying}
+			<div class="copying">
+				<span>{copyMiss ? 'No colour from this visit there. Tap another word you coloured,' : 'Tap a word you coloured on this visit to copy its colour,'} or:</span>
+				<button onclick={() => latestColours && useColours(latestColours)}>Previous</button>
+				<button onclick={() => (copying = false)}>Cancel</button>
+			</div>
+		{/if}
 		{#if added.length}
 			<div class="added">
 				<span class="label">Colours so far (tap to remove), then this one:</span>
@@ -320,7 +361,7 @@
 			<button onclick={() => answer('none')} disabled={!selection || busy}>No colour</button>
 			<button onclick={addColour} disabled={!selection || busy || added.length >= 9}>Add colour</button>
 			<button onclick={() => (noteOpen = !noteOpen)} class:on={noteOpen || note}>Note</button>
-			<button onclick={samePrevious} disabled={!previous}>Same as previous</button>
+			<button onclick={() => (copying ? (copying = false) : startCopy())} class:on={copying} disabled={!latestColours}>Copy colour</button>
 		</div>
 	</aside>
 </div>
@@ -451,6 +492,22 @@
 	}
 	button.on {
 		border-color: #111;
+	}
+	.copying {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px 8px;
+		padding: 8px 10px;
+		border: 2px solid #111;
+		border-radius: 8px;
+		font-size: 0.85rem;
+	}
+	.copying span {
+		flex: 1 1 100%;
+	}
+	.copying button {
+		padding: 0.3em 0.9em;
 	}
 	.added {
 		display: flex;
