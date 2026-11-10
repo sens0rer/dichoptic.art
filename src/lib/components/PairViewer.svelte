@@ -68,14 +68,19 @@
 		}
 	});
 
+	// The two sides in image pixels. A single file is split down the middle: each side is half of
+	// it, shown from the same file, so it zooms and pans like two files.
+	const sides = $derived(
+		two
+			? { lw: image.leftW, lh: image.leftH, rw: image.rightW ?? image.leftW, rh: image.rightH ?? image.leftH }
+			: { lw: image.leftW / 2, lh: image.leftH, rw: image.leftW / 2, rh: image.leftH }
+	);
+
 	// Both images share one scale so their relative sizes stay true; the frame sits outside them.
 	const layout = $derived.by(() => {
-		if (!two || !box.w) return null;
+		if (!box.w) return null;
 		const b = outline ? thickness : 0;
-		const lw = image.leftW;
-		const lh = image.leftH;
-		const rw = image.rightW ?? lw;
-		const rh = image.rightH ?? lh;
+		const { lw, lh, rw, rh } = sides;
 		const room = { w: box.w - gap - 4 * b, h: box.h - 2 * b };
 		const k = (Math.min(room.w / (lw + rw), room.h / Math.max(lh, rh)) * size) / 100;
 		// maxW/maxH: how far a frame may grow when zoomed, its share of the whole stage.
@@ -99,7 +104,7 @@
 	// Up to where one image pixel covers 8x8 screen pixels, and never less than 8x.
 	const maxZoom = $derived(
 		layout
-			? Math.max(8, 8 * Math.max(image.leftW / layout.left.w, (image.rightW ?? image.leftW) / layout.right.w))
+			? Math.max(8, 8 * Math.max(sides.lw / layout.left.w, sides.rw / layout.right.w))
 			: 8
 	);
 	const STEP = 1.5;
@@ -236,19 +241,15 @@
 			? { a: fileUrl(image.leftKey!), b: fileUrl(image.rightKey!) }
 			: { a: fileUrl(image.fileKey!), b: '' }
 	);
-	const order = $derived(
-		layout
-			? swapped
-				? [
-						{ src: urls.b, d: layout.right },
-						{ src: urls.a, d: layout.left }
-					]
-				: [
-						{ src: urls.a, d: layout.left },
-						{ src: urls.b, d: layout.right }
-					]
-			: []
-	);
+	// Each frame's file and, for a single file, which half of it (col 0 left, 1 right): the frame
+	// shows the whole file `cols` sides wide, shifted so only its own half is inside.
+	const order = $derived.by(() => {
+		if (!layout) return [];
+		const cols = two ? 1 : 2;
+		const left = { side: 'left', src: urls.a, d: layout.left, col: 0, cols };
+		const right = { side: 'right', src: two ? urls.b : urls.a, d: layout.right, col: two ? 0 : 1, cols };
+		return swapped ? [right, left] : [left, right];
+	});
 
 	// iPhone Safari cannot fullscreen page elements, so fall back to a fixed full-window overlay.
 	let overlay = $state(false);
@@ -285,22 +286,22 @@
 				break;
 			case 'o':
 			case 'O':
-				if (two) outline = !outline;
+				outline = !outline;
 				break;
 			case 's':
 			case 'S':
-				if (two) swapped = !swapped;
+				swapped = !swapped;
 				break;
 			case '+':
 			case '=':
-				if (two) zoomBy(STEP);
+				zoomBy(STEP);
 				break;
 			case '-':
 			case '_':
-				if (two) zoomBy(1 / STEP);
+				zoomBy(1 / STEP);
 				break;
 			case '0':
-				if (two) resetZoom();
+				resetZoom();
 				break;
 			default:
 				return;
@@ -314,7 +315,7 @@
 
 <!-- While zoomed, a horizontal drag pans instead of swiping to the next pair. -->
 <div class="stage" class:full={fullscreen} class:overlay data-swipe={zoomed ? undefined : ''} bind:this={stage} style="--b: {layout?.b ?? 0}px; --gap: {gap}px">
-	{#if two && layout}
+	{#if layout}
 		<div class="pair" class:zoomed bind:this={pairEl}>
 			{#each order as o, i (i)}
 				{@const fs = frameSize(o.d, shown.z)}
@@ -331,11 +332,11 @@
 				>
 					<img
 						src={o.src}
-						alt="{image.title}, {i === 0 ? 'left' : 'right'} image"
-						width={o.d.w}
+						alt="{image.title}, {o.side} image"
+						width={o.d.w * o.cols}
 						height={o.d.h}
 						draggable="false"
-						style="width: {o.d.w * shown.z}px; height: {o.d.h * shown.z}px; transform: translate({Math.round(fs.w / 2 - shown.x * o.d.w * shown.z)}px, {Math.round(fs.h / 2 - shown.y * o.d.h * shown.z)}px)"
+						style="width: {o.d.w * o.cols * shown.z}px; height: {o.d.h * shown.z}px; transform: translate({Math.round(fs.w / 2 - (shown.x + o.col) * o.d.w * shown.z)}px, {Math.round(fs.h / 2 - shown.y * o.d.h * shown.z)}px)"
 					/>
 				</div>
 			{/each}
@@ -356,7 +357,6 @@
 <div class="controls">
 	<div class="row">
 	<button type="button" onclick={toggleFullscreen} title="Fullscreen (F)">Fullscreen</button>
-	{#if two}
 		<button type="button" onclick={() => (swapped = !swapped)} class:active={swapped} title="Swap sides (S)">
 			Swap sides
 		</button>
@@ -385,16 +385,11 @@
 			<button type="button" onclick={() => zoomBy(STEP)} disabled={shown.z >= maxZoom} aria-label="Zoom in (+)" title="Zoom in (+)">+</button>
 			<button type="button" onclick={resetZoom} disabled={!zoomed} title="Reset zoom (0)">Reset</button>
 		</span>
-	{/if}
 	</div>
 	<p class="keys muted small">
-		← → previous/next · F fullscreen{two
-			? ' · O outline · S swap sides · + − 0 zoom · Ctrl+scroll to zoom, drag to pan'
-			: ''}
+		← → previous/next · F fullscreen · O outline · S swap sides · + − 0 zoom · Ctrl+scroll to zoom, drag to pan
 	</p>
-	{#if two}
-		<p class="touch-hint muted small">Pinch to zoom · double-tap to zoom in or out</p>
-	{/if}
+	<p class="touch-hint muted small">Pinch to zoom · double-tap to zoom in or out</p>
 </div>
 
 <style>
