@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { flushSync, onMount } from 'svelte';
+	import { flushSync, onMount, untrack } from 'svelte';
 	import { fileUrl } from '#lib/urls';
 
 	let {
@@ -20,10 +20,14 @@
 
 	const two = $derived(image.sourceMode === 'two_files');
 
-	// View-only preferences, remembered per visitor in localStorage.
+	// View-only preferences, remembered per visitor in localStorage, separately for single
+	// side-by-side files, which are made to be seen as one picture: by default no gap and no
+	// outline. Fixed per viewer: the page creates a new one for every image.
+	const single = untrack(() => image.sourceMode === 'single_file');
+	const PREFS = single ? 'viewer-single' : 'viewer';
 	let size = $state(100);
-	let gap = $state(8);
-	let outline = $state(true);
+	let gap = $state(single ? 0 : 8);
+	let outline = $state(!single);
 	let thickness = $state(8);
 	let swapped = $state(false);
 	let fullscreen = $state(false);
@@ -33,7 +37,7 @@
 
 	onMount(() => {
 		try {
-			const saved = JSON.parse(localStorage.getItem('viewer') ?? '{}');
+			const saved = JSON.parse(localStorage.getItem(PREFS) ?? '{}');
 			if (typeof saved.size === 'number') size = saved.size;
 			if (typeof saved.gap === 'number') gap = saved.gap;
 			if (typeof saved.outline === 'boolean') outline = saved.outline;
@@ -62,7 +66,7 @@
 	$effect(() => {
 		const prefs = JSON.stringify({ size, gap, outline, thickness });
 		try {
-			localStorage.setItem('viewer', prefs);
+			localStorage.setItem(PREFS, prefs);
 		} catch {
 			// private mode
 		}
